@@ -1,10 +1,10 @@
 {
-  "name": "website",
+  "name": "extension",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build && cp manifest.json dist/"
   },
   "dependencies": {
     "react": "^19.2.0",

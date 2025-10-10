@@ -1,35 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Read Later Random",
-  "version": "0.2.0",
-  "description": "Save links and view them randomly one at a time",
-  "permissions": ["storage", "activeTab", "scripting", "tabs"],
-  "host_permissions": [
-    "*://*.reddit.com/*",
-    "*://*.youtube.com/*"
-  ],
+  "version": "0.1.0",
+  "description": "Save links for later",
+  "permissions": ["storage", "activeTab"],
   "action": {
-    "default_popup": "popup.html",
-    "default_title": "Read Later Random"
-  },
-  "background": {
-    "service_worker": "background.js",
-    "scripts": ["background.js"]
-  },
-  "content_scripts": [
-    {
-      "matches": [
-        "*://*.reddit.com/*",
-        "*://*.youtube.com/*"
-      ],
-      "js": ["content.js"],
-      "run_at": "document_start"
-    }
-  ],
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "read-later-random@example.com"
-    }
+    "default_popup": "popup.html"
   }
 }
-
