@@ -7,11 +7,19 @@
     "build": "vite build && cp manifest.json dist/"
   },
   "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.545.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss-animate": "^1.0.7",
+    "webextension-polyfill": "^0.12.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
+    "tailwindcss": "^4.1.14",
     "vite": "^7.1.9"
   }
 }

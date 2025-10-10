@@ -1,19 +1,23 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+  import { defineConfig } from 'vite'
+  import react from '@vitejs/plugin-react'
+  import tailwindcss from '@tailwindcss/vite'
+  import path from 'path'
 
-export default defineConfig({
-  plugins: [react()],
-  base: './',
-  build: {
-    rollupOptions: {
-      input: {
-        popup: resolve(__dirname, 'popup.html'),
-      },
-      output: {
-        entryFileNames: '[name].js',
+  export default defineConfig({
+    plugins: [react(), tailwindcss()],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
       },
     },
-    outDir: 'dist',
-  },
-})
+    build: {
+      rollupOptions: {
+        input: {
+          popup: 'popup.html'
+        },
+        output: {
+          entryFileNames: '[name].js'
+        }
+      }
+    }
+  })
