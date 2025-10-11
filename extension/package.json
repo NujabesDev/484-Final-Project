@@ -4,11 +4,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && cp manifest.json dist/"
+    "build": "vite build && cp manifest.json dist/",
+    "build:chrome": "npm run build",
+    "build:firefox": "npm run build",
+    "package:chrome": "npm run build && cd dist && zip -r ../read-later-chrome.zip * && cd ..",
+    "package:firefox": "npm run build && cd dist && zip -r ../read-later-firefox.zip * && cd .."
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "firebase": "^12.4.0",
     "lucide-react": "^0.545.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

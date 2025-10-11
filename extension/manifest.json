@@ -6,5 +6,16 @@
   "permissions": ["storage", "activeTab"],
   "action": {
     "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "externally_connectable": {
+    "matches": [
+      "http://localhost:5173/*",
+      "http://localhost:3000/*",
+      "https://your-website.com/*"
+    ]
   }
 }

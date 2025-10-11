@@ -57,11 +57,45 @@ Note: Firefox removes temporary extensions when you close the browser.
 ## Project Structure
 
 ```
-484-Final-Project/
-├── extension/       # Browser extension (React + Vite)
-├── website/         # Web dashboard (React + Vite)
-├── shared/          # Shared config (Firebase)
-└── docs/            # Project documentation
+/484-Final-Project/
+│
+├── extension/          🧩 THE BROWSER EXTENSION
+│   ├── src/
+│   │   ├── popup.jsx       → Main React component for the extension popup
+│   │   ├── index.css       → Tailwind CSS styles
+│   │   └── lib/utils.js    → Utility functions
+│   ├── dist/              → Built extension files (load this in browser)
+│   ├── manifest.json      → Extension config (permissions, name, etc.)
+│   ├── popup.html         → Entry HTML for the extension popup
+│   ├── package.json       → Dependencies & build scripts
+│   ├── vite.config.js     → Vite bundler config
+│   └── BROWSER_SETUP.md   → Instructions for loading in Chrome/Firefox
+│
+├── website/           🌐 WEB DASHBOARD (companion site)
+│   ├── src/
+│   │   ├── App.jsx         → Main React app component
+│   │   ├── main.jsx        → React entry point
+│   │   ├── index.css       → Tailwind CSS styles
+│   │   └── lib/utils.js    → Utility functions
+│   ├── dist/              → Built website files
+│   ├── index.html         → Entry HTML for the website
+│   ├── package.json       → Dependencies & build scripts
+│   └── vite.config.js     → Vite bundler config
+│
+├── .git/              📦 Git repository
+├── .gitignore
+└── README.md          📖 Main project documentation
 ```
+
+### Key Files
+
+**Extension:**
+- `extension/src/popup.jsx` - Main UI logic
+- `extension/manifest.json` - Browser extension configuration
+- `extension/package.json` - Build scripts (build, package for Chrome/Firefox)
+
+**Website:**
+- `website/src/App.jsx` - Main web app
+- Similar structure to extension
 
 See `claude.md` and `TECH_STACK.md` for complete technical documentation.
