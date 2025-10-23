@@ -29,28 +29,35 @@
     const link = event.target.closest('a');
     if (!link || !link.href) return;
 
-    // Allow same-site navigation (subpages, tabs, etc.)
-    try {
-      const linkUrl = new URL(link.href);
-      const currentUrl = new URL(window.location.href);
+    // Block YouTube videos specifically
+    if (link.href.includes('youtube.com/watch')) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
 
-      // If it's the same hostname, allow it (e.g., youtube.com -> youtube.com/subscriptions)
-      if (linkUrl.hostname === currentUrl.hostname) {
-        return;
-      }
-    } catch (e) {
-      // If URL parsing fails, block it to be safe
+      chrome.runtime.sendMessage({
+        type: 'LINK_INTERCEPTED',
+        url: link.href,
+        title: link.textContent.trim() || link.href
+      });
+      return;
     }
 
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
+    // Block Reddit posts/comments
+    if (link.href.includes('reddit.com/r/') && link.href.includes('/comments/')) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
 
-    chrome.runtime.sendMessage({
-      type: 'LINK_INTERCEPTED',
-      url: link.href,
-      title: link.textContent.trim() || link.href
-    });
+      chrome.runtime.sendMessage({
+        type: 'LINK_INTERCEPTED',
+        url: link.href,
+        title: link.textContent.trim() || link.href
+      });
+      return;
+    }
+
+    // Allow everything else (navigation tabs, etc.)
   }
 
   function handleKeydown(event) {
@@ -59,24 +66,33 @@
     if (event.key === 'Enter') {
       const link = document.activeElement;
       if (link && link.tagName === 'A' && link.href) {
-        // Allow same-site navigation
-        try {
-          const linkUrl = new URL(link.href);
-          const currentUrl = new URL(window.location.href);
-          if (linkUrl.hostname === currentUrl.hostname) {
-            return;
-          }
-        } catch (e) {}
+        // Block YouTube videos
+        if (link.href.includes('youtube.com/watch')) {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
 
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+          chrome.runtime.sendMessage({
+            type: 'LINK_INTERCEPTED',
+            url: link.href,
+            title: link.textContent.trim() || link.href
+          });
+          return;
+        }
 
-        chrome.runtime.sendMessage({
-          type: 'LINK_INTERCEPTED',
-          url: link.href,
-          title: link.textContent.trim() || link.href
-        });
+        // Block Reddit posts
+        if (link.href.includes('reddit.com/r/') && link.href.includes('/comments/')) {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+
+          chrome.runtime.sendMessage({
+            type: 'LINK_INTERCEPTED',
+            url: link.href,
+            title: link.textContent.trim() || link.href
+          });
+          return;
+        }
       }
     }
   }
