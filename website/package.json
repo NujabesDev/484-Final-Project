@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "rm -rf src/shared && cp -r ../shared src/shared",
     "build": "vite build"
   },
   "dependencies": {

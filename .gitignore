@@ -29,3 +29,6 @@ Thumbs.db
 *.swo
 
 *.claude
+
+# Copied shared folder for deployment
+website/src/shared/
