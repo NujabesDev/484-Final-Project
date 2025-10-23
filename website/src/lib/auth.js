@@ -1,5 +1,5 @@
 // Authentication utilities
-// Shared between extension and website
+// Website version
 
 import {
   GoogleAuthProvider,

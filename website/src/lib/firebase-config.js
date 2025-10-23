@@ -1,5 +1,5 @@
 // Firebase configuration
-// Shared between extension and website
+// Website version
 
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";

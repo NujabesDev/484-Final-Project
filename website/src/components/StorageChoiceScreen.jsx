@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { signInWithGoogle } from '@shared/auth'
-import { sendUserToExtension } from '@shared/extensionMessaging'
+import { signInWithGoogle } from '@/lib/auth'
+import { sendUserToExtension } from '@/lib/extensionMessaging'
 
 export function StorageChoiceScreen({ onNext, onBack, onChoose }) {
   const [selected, setSelected] = useState(null)

@@ -3,8 +3,8 @@ import { WelcomeScreen } from '@/components/WelcomeScreen'
 import { StorageChoiceScreen } from '@/components/StorageChoiceScreen'
 import { DashboardIntroScreen } from '@/components/DashboardIntroScreen'
 import { DashboardScreen } from '@/components/DashboardScreen'
-import { onAuthChange } from '@shared/auth'
-import { sendUserToExtension, clearUserFromExtension } from '@shared/extensionMessaging'
+import { onAuthChange } from '@/lib/auth'
+import { sendUserToExtension, clearUserFromExtension } from '@/lib/extensionMessaging'
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState(0)

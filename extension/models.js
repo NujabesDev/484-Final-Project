@@ -1,5 +1,5 @@
 // Data models and types
-// Shared between extension and website
+// Extension version
 
 /**
  * Link model
