@@ -13,9 +13,9 @@ export function StorageChoiceScreen({ onNext, onBack, onChoose, extensionParams 
   const sendToExtension = async (user, token) => {
     return new Promise((resolve, reject) => {
       try {
+        // Access browser APIs via window object (needed for bundlers like Vite)
         // Firefox uses 'browser' API, Chrome uses 'chrome' API
-        const runtime = typeof browser !== 'undefined' ? browser.runtime :
-                       typeof chrome !== 'undefined' ? chrome.runtime : null;
+        const runtime = window.browser?.runtime || window.chrome?.runtime;
 
         if (!runtime) {
           reject(new Error('Browser extension API not available'));
