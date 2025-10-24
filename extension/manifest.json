@@ -24,6 +24,15 @@
       ],
       "js": ["content.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://484-final-project-three.vercel.app/*",
+        "http://localhost:5173/*",
+        "http://localhost:3000/*"
+      ],
+      "js": ["auth-bridge.js"],
+      "run_at": "document_start"
     }
   ],
   "externally_connectable": {

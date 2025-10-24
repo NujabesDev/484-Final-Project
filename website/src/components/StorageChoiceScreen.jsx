@@ -9,46 +9,51 @@ export function StorageChoiceScreen({ onNext, onBack, onChoose, extensionParams 
 
   const isExtensionFlow = extensionParams && extensionParams.extensionId
 
-  // Send auth data to extension (supports both Chrome and Firefox)
+  // Send auth data to extension using window.postMessage (works in both Chrome and Firefox)
   const sendToExtension = async (user, token) => {
     return new Promise((resolve, reject) => {
-      try {
-        // Access browser APIs via window object (needed for bundlers like Vite)
-        // Firefox uses 'browser' API, Chrome uses 'chrome' API
-        const runtime = window.browser?.runtime || window.chrome?.runtime;
-
-        if (!runtime) {
-          reject(new Error('Browser extension API not available'));
+      // Set up listener for response from content script
+      const messageHandler = (event) => {
+        // Only accept messages from our own window
+        if (event.source !== window) {
           return;
         }
 
-        runtime.sendMessage(
-          extensionParams.extensionId,
-          {
-            action: 'AUTH_SUCCESS',
-            user: {
-              uid: user.uid,
-              email: user.email,
-              displayName: user.displayName,
-              photoURL: user.photoURL
-            },
-            token: token
-          },
-          (response) => {
-            const lastError = runtime.lastError;
-            if (lastError) {
-              reject(new Error(lastError.message))
-            } else if (response?.success) {
-              resolve(response)
-            } else {
-              reject(new Error(response?.error || 'Unknown error'))
-            }
+        // Check if this is the auth response from extension
+        if (event.data && event.data.type === 'AUTH_FROM_EXTENSION') {
+          // Clean up listener
+          window.removeEventListener('message', messageHandler);
+
+          // Resolve or reject based on response
+          if (event.data.success) {
+            resolve(event.data);
+          } else {
+            reject(new Error(event.data.error || 'Extension sync failed'));
           }
-        )
-      } catch (error) {
-        reject(error)
-      }
-    })
+        }
+      };
+
+      // Add listener for response
+      window.addEventListener('message', messageHandler);
+
+      // Send auth data to content script via postMessage
+      window.postMessage({
+        type: 'AUTH_TO_EXTENSION',
+        user: {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL
+        },
+        token: token
+      }, '*');
+
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        window.removeEventListener('message', messageHandler);
+        reject(new Error('Extension sync timeout'));
+      }, 10000);
+    });
   }
 
   const handleGoogleSignIn = async () => {
