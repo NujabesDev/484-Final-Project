@@ -73,13 +73,12 @@ export function StorageChoiceScreen({ onNext, onBack, onChoose, extensionParams 
 
         try {
           await sendToExtension(user, token)
-          setSuccess('✓ Successfully synced with extension! You can close this tab or continue to the dashboard.')
+          setSuccess('✓ Successfully synced with extension!')
           setLoading(false)
 
-          // Auto-close after 3 seconds (user can also continue to dashboard)
-          setTimeout(() => {
-            window.close()
-          }, 3000)
+          // Continue to dashboard after successful sync
+          onChoose('google')
+          setTimeout(() => onNext(), 1000)
         } catch (extensionError) {
           console.error('Failed to sync with extension:', extensionError)
           setError(`Extension sync failed: ${extensionError.message}. Continuing to dashboard...`)

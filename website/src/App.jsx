@@ -18,9 +18,8 @@ function App() {
     const extensionId = urlParams.get('extensionId')
 
     if (source === 'extension' && extensionId) {
-      // Extension-initiated flow - skip to sign-in screen
+      // Extension-initiated flow - just store the params, start from welcome screen
       setExtensionParams({ extensionId })
-      setCurrentScreen(2)
     }
   }, [])
 
