@@ -35,8 +35,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'LINK_INTERCEPTED') {
     handleInterceptedLink(message, sender.tab);
     sendResponse({ success: true });
+    return true;
   }
-  return true;
+
+  if (message.action === 'AUTH_SUCCESS') {
+    handleAuthSuccess(message, sender, sendResponse);
+    return true; // Keep channel open for async response
+  }
+
+  return false;
 });
 
 // Handle authentication success from website
