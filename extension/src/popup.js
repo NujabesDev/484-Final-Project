@@ -1,3 +1,6 @@
+import { db } from './firebase-config.js';
+import { collection, getDocs, addDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+
 // Global state
 let currentLink = null;
 let queue = [];
@@ -25,7 +28,7 @@ const userAvatar = document.getElementById('userAvatar');
 const userName = document.getElementById('userName');
 const userEmail = document.getElementById('userEmail');
 
-// Auth website URL (update this with your deployed URL)
+// Auth website URL
 const AUTH_URL = 'https://484-final-project-three.vercel.app/';
 
 // Initialize popup
@@ -79,8 +82,12 @@ async function handleSignIn() {
   // Listen for storage changes to update UI when auth completes
   chrome.storage.onChanged.addListener(function authListener(changes, namespace) {
     if (namespace === 'local' && changes.user) {
-      loadAuthState().then(() => {
+      loadAuthState().then(async () => {
         updateAuthUI();
+        // Reload queue from Firestore when user signs in
+        await loadQueue();
+        updateQueueCount();
+        displayRandomLink();
         chrome.storage.onChanged.removeListener(authListener);
       });
     }
@@ -91,19 +98,44 @@ async function handleSignIn() {
 async function handleSignOut() {
   await chrome.storage.local.remove(['user', 'authToken', 'authTimestamp']);
   currentUser = null;
+  queue = []; // Clear queue on sign out
   updateAuthUI();
+  updateQueueCount();
+  displayRandomLink();
 }
 
 // Load queue from storage
 async function loadQueue() {
-  const result = await chrome.storage.local.get(['queue']);
-  queue = result.queue || [];
+  // Require authentication to load queue
+  if (!currentUser || !currentUser.uid) {
+    console.log('User not authenticated - cannot load queue');
+    queue = [];
+    return;
+  }
+
+  try {
+    // Load all links from Firestore for the current user
+    const linksRef = collection(db, 'users', currentUser.uid, 'links');
+    const querySnapshot = await getDocs(linksRef);
+
+    queue = [];
+    querySnapshot.forEach((doc) => {
+      queue.push({
+        id: doc.id, // Use Firestore document ID
+        url: doc.data().url,
+        title: doc.data().title,
+        timestamp: doc.data().timestamp
+      });
+    });
+
+    console.log(`Loaded ${queue.length} links from Firestore`);
+  } catch (error) {
+    console.error('Failed to load queue from Firestore:', error);
+    queue = [];
+  }
 }
 
-// Save queue to storage
-async function saveQueue() {
-  await chrome.storage.local.set({ queue });
-}
+// Removed saveQueue - no longer needed since we write directly to Firestore
 
 // Load productivity mode from storage
 async function loadProductivityMode() {
@@ -158,32 +190,69 @@ function updateQueueCount() {
 
 // Save a new link to the queue
 async function saveLink(url, title) {
-  const newLink = {
-    id: Date.now().toString(),
-    url: url,
-    title: title || url,
-    timestamp: Date.now()
-  };
-
-  // Check for duplicates
-  const isDuplicate = queue.some(link => link.url === url);
-  if (isDuplicate) {
-    alert('This link is already in your queue!');
+  // Require authentication
+  if (!currentUser || !currentUser.uid) {
+    alert('Please sign in to save links!');
     return;
   }
 
-  queue.push(newLink);
-  await saveQueue();
-  updateQueueCount();
-  displayRandomLink();
+  try {
+    // Check for duplicates in Firestore
+    const linksRef = collection(db, 'users', currentUser.uid, 'links');
+    const q = query(linksRef, where('url', '==', url));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      alert('This link is already in your queue!');
+      return;
+    }
+
+    // Save to Firestore
+    const docRef = await addDoc(collection(db, 'users', currentUser.uid, 'links'), {
+      url: url,
+      title: title || url,
+      timestamp: Date.now(),
+      createdAt: Date.now()
+    });
+
+    // Add to local queue array for immediate UI update
+    queue.push({
+      id: docRef.id,
+      url: url,
+      title: title || url,
+      timestamp: Date.now()
+    });
+
+    updateQueueCount();
+    displayRandomLink();
+    alert('Page saved!');
+  } catch (error) {
+    console.error('Failed to save link:', error);
+    alert('Failed to save link. Please try again.');
+  }
 }
 
 // Delete a link from the queue
 async function deleteLink(id) {
-  queue = queue.filter(link => link.id !== id);
-  await saveQueue();
-  updateQueueCount();
-  displayRandomLink();
+  // Require authentication
+  if (!currentUser || !currentUser.uid) {
+    console.error('User not authenticated - cannot delete link');
+    return;
+  }
+
+  try {
+    // Delete from Firestore
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'links', id));
+    console.log('Link deleted from Firestore:', id);
+
+    // Remove from local queue array for immediate UI update
+    queue = queue.filter(link => link.id !== id);
+    updateQueueCount();
+    displayRandomLink();
+  } catch (error) {
+    console.error('Failed to delete link from Firestore:', error);
+    alert('Failed to delete link. Please try again.');
+  }
 }
 
 // Open link in new tab and remove from queue

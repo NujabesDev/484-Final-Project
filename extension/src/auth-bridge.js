@@ -55,4 +55,4 @@ window.addEventListener('message', async (event) => {
 
 // Notify webpage that extension bridge is ready
 console.log('[Auth Bridge] Notifying webpage that extension is ready');
-window.postMessage({ type: 'EXTENSION_BRIDGE_READY' }, '*');
+window.postMessage({ type: 'EXTENSION_BRIDGE_READY' }, window.location.origin);

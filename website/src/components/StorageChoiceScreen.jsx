@@ -46,7 +46,7 @@ export function StorageChoiceScreen({ onNext, onBack, onChoose, extensionParams 
           photoURL: user.photoURL
         },
         token: token
-      }, '*');
+      }, window.location.origin);
 
       // Timeout after 10 seconds
       setTimeout(() => {

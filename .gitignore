@@ -32,6 +32,3 @@ Thumbs.db
 
 # Copied shared folder for deployment
 website/src/shared/
-
-# Project documentation
-CLAUDE.MD

@@ -2,7 +2,7 @@
 import { db, getCurrentUser, isAuthenticated } from './firebase-config.js';
 import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 
-// Website URL for authentication (update this with your deployed URL)
+// Website URL for authentication
 const WEBSITE_URL = 'https://484-final-project-three.vercel.app/';
 
 chrome.runtime.onInstalled.addListener((details) => {
@@ -84,42 +84,22 @@ async function handleInterceptedLink(data, tab) {
 }
 
 // Save a link to the queue
-// TODO: Update this to save to Firestore instead of local storage
+// Saves only to Firestore - requires authentication
 async function saveToQueue(url, title) {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['queue'], (result) => {
-      const queue = result.queue || [];
-
-      if (queue.some(link => link.url === url)) {
-        resolve(false);
-        return;
-      }
-
-      queue.push({
-        id: Date.now().toString(),
-        url: url,
-        title: title || url,
-        timestamp: Date.now()
-      });
-
-      chrome.storage.local.set({ queue }, () => resolve(true));
-    });
-  });
-}
-
-// Example: Save link to Firestore (use this instead of saveToQueue once ready)
-async function saveToFirestore(url, title) {
   try {
-    const user = await getCurrentUser();
+    // Get auth state
+    const result = await chrome.storage.local.get(['user']);
+    const user = result.user;
 
-    if (!user) {
-      console.error('User not authenticated, cannot save to Firestore');
+    // Require authentication
+    if (!user || !user.uid) {
+      console.error('User not authenticated - cannot save link');
       return false;
     }
 
-    // Check for duplicates
-    const linksRef = collection(db, 'links');
-    const q = query(linksRef, where('userId', '==', user.uid), where('url', '==', url));
+    // Check for duplicates in Firestore
+    const linksRef = collection(db, 'users', user.uid, 'links');
+    const q = query(linksRef, where('url', '==', url));
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
@@ -127,19 +107,18 @@ async function saveToFirestore(url, title) {
       return false;
     }
 
-    // Add new link
-    await addDoc(collection(db, 'links'), {
-      userId: user.uid,
+    // Save to Firestore
+    await addDoc(collection(db, 'users', user.uid, 'links'), {
       url: url,
       title: title || url,
       timestamp: Date.now(),
-      createdAt: new Date().toISOString()
+      createdAt: Date.now()
     });
 
-    console.log('Link saved to Firestore');
+    console.log('Link saved to Firestore for user:', user.uid);
     return true;
   } catch (error) {
-    console.error('Failed to save to Firestore:', error);
+    console.error('Failed to save link to Firestore:', error);
     return false;
   }
 }

@@ -1,11 +1,11 @@
 {
   "name": "read-later-random-extension",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "type": "module",
   "private": true,
   "scripts": {
     "build": "vite build && npm run copy-files",
-    "copy-files": "cp manifest.json dist/ && cp popup.html dist/ && cp models.js dist/",
+    "copy-files": "cp manifest.json dist/ && cp popup.html dist/",
     "dev": "vite build --watch"
   },
   "dependencies": {
