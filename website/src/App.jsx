@@ -3,34 +3,25 @@ import { WelcomeScreen } from '@/components/WelcomeScreen'
 import { StorageChoiceScreen } from '@/components/StorageChoiceScreen'
 import { DashboardIntroScreen } from '@/components/DashboardIntroScreen'
 import { DashboardScreen } from '@/components/DashboardScreen'
-import { onAuthChange } from '@/lib/auth'
-import { sendUserToExtension, clearUserFromExtension } from '@/lib/extensionMessaging'
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState(0)
   const [storageChoice, setStorageChoice] = useState(null)
+  const [isLeftHovered, setIsLeftHovered] = useState(false)
+  const [isRightHovered, setIsRightHovered] = useState(false)
+  const [extensionParams, setExtensionParams] = useState(null)
 
-  // Sync auth state changes with extension
+  // Detect if this is an extension-initiated auth flow
   useEffect(() => {
-    const unsubscribe = onAuthChange(async (user) => {
-      if (user) {
-        // User signed in - send to extension
-        console.log('Auth state: user signed in, syncing with extension')
-        const result = await sendUserToExtension(user)
-        if (!result.success) {
-          console.warn('Failed to sync user with extension:', result.error)
-        }
-      } else {
-        // User signed out - clear from extension
-        console.log('Auth state: user signed out, clearing from extension')
-        const result = await clearUserFromExtension()
-        if (!result.success) {
-          console.warn('Failed to clear user from extension:', result.error)
-        }
-      }
-    })
+    const urlParams = new URLSearchParams(window.location.search)
+    const source = urlParams.get('source')
+    const extensionId = urlParams.get('extensionId')
 
-    return () => unsubscribe()
+    if (source === 'extension' && extensionId) {
+      // Extension-initiated flow - skip to sign-in screen
+      setExtensionParams({ extensionId })
+      setCurrentScreen(2)
+    }
   }, [])
 
   const screens = [
@@ -41,18 +32,53 @@ function App() {
       onNext={() => setCurrentScreen(3)}
       onBack={() => setCurrentScreen(1)}
       onChoose={(choice) => setStorageChoice(choice)}
+      extensionParams={extensionParams}
     />,
     <DashboardScreen key="dashboard" storageChoice={storageChoice} />,
   ]
+
+  const handleLeftThirdClick = () => {
+    if (currentScreen > 0 && currentScreen < 3) {
+      setCurrentScreen(currentScreen - 1)
+    }
+  }
+
+  const handleRightThirdClick = () => {
+    if (currentScreen < 2) {
+      setCurrentScreen(currentScreen + 1)
+    }
+  }
 
   return (
     <div className="min-h-screen dot-grid-bg relative">
       {currentScreen > 0 && currentScreen < 3 && (
         <button
+          onClick={handleLeftThirdClick}
+          onMouseEnter={() => setIsLeftHovered(true)}
+          onMouseLeave={() => setIsLeftHovered(false)}
+          className="fixed left-0 top-0 h-full w-1/3 z-40 cursor-pointer"
+          aria-label="Go back"
+        />
+      )}
+
+      {currentScreen < 2 && (
+        <button
+          onClick={handleRightThirdClick}
+          onMouseEnter={() => setIsRightHovered(true)}
+          onMouseLeave={() => setIsRightHovered(false)}
+          className="fixed right-0 top-0 h-full w-1/3 z-40 cursor-pointer"
+          aria-label="Go forward"
+        />
+      )}
+
+      {currentScreen > 0 && currentScreen < 3 && (
+        <button
           onClick={() => setCurrentScreen(currentScreen - 1)}
-          className="fixed left-8 top-1/2 -translate-y-1/2 z-50 text-neutral-600 hover:text-white transition-all duration-500 hover:scale-110 group"
+          className={`fixed left-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 pointer-events-none ${
+            isLeftHovered ? "text-white scale-110" : "text-neutral-500"
+          }`}
         >
-          <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+          <svg className="h-12 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
           <span className="sr-only">Back</span>
@@ -62,9 +88,11 @@ function App() {
       {currentScreen < 2 && (
         <button
           onClick={() => setCurrentScreen(currentScreen + 1)}
-          className="fixed right-8 top-1/2 -translate-y-1/2 z-50 text-neutral-600 hover:text-white transition-all duration-500 hover:scale-110 group"
+          className={`fixed right-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 pointer-events-none ${
+            isRightHovered ? "text-white scale-110" : "text-neutral-500"
+          }`}
         >
-          <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+          <svg className="h-12 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
           <span className="sr-only">Next</span>

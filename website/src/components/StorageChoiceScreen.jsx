@@ -1,45 +1,92 @@
 import { useState } from 'react'
 import { signInWithGoogle } from '@/lib/auth'
-import { sendUserToExtension } from '@/lib/extensionMessaging'
 
-export function StorageChoiceScreen({ onNext, onBack, onChoose }) {
+export function StorageChoiceScreen({ onNext, onBack, onChoose, extensionParams }) {
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(null)
+
+  const isExtensionFlow = extensionParams && extensionParams.extensionId
+
+  // Send auth data to extension
+  const sendToExtension = async (user, token) => {
+    return new Promise((resolve, reject) => {
+      try {
+        chrome.runtime.sendMessage(
+          extensionParams.extensionId,
+          {
+            action: 'AUTH_SUCCESS',
+            user: {
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+              photoURL: user.photoURL
+            },
+            token: token
+          },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message))
+            } else if (response?.success) {
+              resolve(response)
+            } else {
+              reject(new Error(response?.error || 'Unknown error'))
+            }
+          }
+        )
+      } catch (error) {
+        reject(error)
+      }
+    })
+  }
 
   const handleGoogleSignIn = async () => {
     setSelected('google')
     setLoading(true)
     setError(null)
+    setSuccess(null)
 
     try {
       // Sign in with Google OAuth
       const result = await signInWithGoogle()
       const user = result.user
 
-      // Send auth data to extension
-      const extensionResult = await sendUserToExtension(user)
+      if (isExtensionFlow) {
+        // Extension-initiated flow - send token to extension
+        const token = await user.getIdToken()
 
-      if (!extensionResult.success) {
-        console.warn('Could not sync with extension:', extensionResult.error)
-        // Continue anyway - extension sync is optional
+        try {
+          await sendToExtension(user, token)
+          setSuccess('✓ Successfully synced with extension! You can close this tab or continue to the dashboard.')
+          setLoading(false)
+
+          // Auto-close after 3 seconds (user can also continue to dashboard)
+          setTimeout(() => {
+            window.close()
+          }, 3000)
+        } catch (extensionError) {
+          console.error('Failed to sync with extension:', extensionError)
+          setError(`Extension sync failed: ${extensionError.message}. Continuing to dashboard...`)
+          setLoading(false)
+
+          // Continue to dashboard even if extension sync fails
+          setTimeout(() => {
+            onChoose('google')
+            onNext()
+          }, 2000)
+        }
+      } else {
+        // Normal flow - continue to dashboard
+        onChoose('google')
+        setTimeout(() => onNext(), 400)
       }
-
-      onChoose('google')
-      setTimeout(() => onNext(), 400)
     } catch (error) {
       console.error('Sign in failed:', error)
       setError('Sign in failed. Please try again.')
       setSelected(null)
-    } finally {
       setLoading(false)
     }
-  }
-
-  const handleLocalChoice = () => {
-    setSelected('local')
-    onChoose('local')
-    setTimeout(() => onNext(), 400)
   }
 
   return (
@@ -47,9 +94,13 @@ export function StorageChoiceScreen({ onNext, onBack, onChoose }) {
       <div className="max-w-2xl w-full space-y-16">
         <div className="text-center space-y-6 animate-fade-in-up">
           <h2 className="text-6xl md:text-7xl font-serif text-white tracking-tight leading-[0.95] text-balance">
-            Choose your storage
+            {isExtensionFlow ? 'Sign in to Continue' : 'Choose your storage'}
           </h2>
-          <p className="text-neutral-500 text-xl font-light leading-relaxed">Sync across devices or keep it local</p>
+          <p className="text-neutral-500 text-xl font-light leading-relaxed">
+            {isExtensionFlow
+              ? 'Sign in with your Google account to sync with the extension'
+              : 'Sync across devices or keep it local'}
+          </p>
         </div>
 
         {error && (
@@ -58,11 +109,17 @@ export function StorageChoiceScreen({ onNext, onBack, onChoose }) {
           </div>
         )}
 
-        <div className="space-y-6 animate-fade-in-up" style={{ animationDelay: "0.15s", opacity: 0 }}>
+        {success && (
+          <div className="text-center text-green-400 text-sm animate-fade-in-up">
+            {success}
+          </div>
+        )}
+
+        <div className="flex justify-center animate-fade-in-up" style={{ animationDelay: "0.15s", opacity: 0 }}>
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className={`w-full p-6 bg-white text-black rounded-2xl transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-white/10 flex items-center justify-center gap-4 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+            className={`max-w-md w-full p-6 bg-white text-black rounded-2xl transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-white/10 flex items-center justify-center gap-4 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
               selected === "google" ? "scale-[1.02] shadow-2xl shadow-white/10" : ""
             }`}
           >
@@ -87,16 +144,6 @@ export function StorageChoiceScreen({ onNext, onBack, onChoose }) {
             <span className="text-lg font-medium">
               {loading ? 'Signing in...' : 'Sign in with Google'}
             </span>
-          </button>
-
-          <button
-            onClick={handleLocalChoice}
-            disabled={loading}
-            className={`w-full p-5 border border-neutral-800 text-white rounded-2xl transition-all duration-500 hover:scale-[1.02] hover:border-neutral-600 hover:bg-neutral-950 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
-              selected === "local" ? "scale-[1.02] border-neutral-600 bg-neutral-950" : ""
-            }`}
-          >
-            <span className="text-lg font-light">Continue with local storage</span>
           </button>
         </div>
       </div>

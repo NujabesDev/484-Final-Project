@@ -1,0 +1,17 @@
+{
+  "name": "read-later-random-extension",
+  "version": "0.2.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "vite build && npm run copy-files",
+    "copy-files": "cp manifest.json dist/ && cp popup.html dist/ && cp models.js dist/",
+    "dev": "vite build --watch"
+  },
+  "dependencies": {
+    "firebase": "^12.4.0"
+  },
+  "devDependencies": {
+    "vite": "^7.1.12"
+  }
+}

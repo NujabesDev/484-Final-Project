@@ -26,6 +26,12 @@
       "run_at": "document_start"
     }
   ],
+  "externally_connectable": {
+    "matches": [
+      "http://localhost:*/*",
+      "https://*.vercel.app/*"
+    ]
+  },
   "browser_specific_settings": {
     "gecko": {
       "id": "read-later-random@example.com"

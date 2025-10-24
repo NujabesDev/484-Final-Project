@@ -1,4 +1,6 @@
 // Background service worker
+import { db, getCurrentUser, isAuthenticated } from './firebase-config.js';
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 
 // Website URL for authentication (update this with your deployed URL)
 const WEBSITE_URL = 'http://localhost:5173/'; // Change to production URL when deployed
@@ -43,6 +45,9 @@ async function handleAuthSuccess(message, sender, sendResponse) {
     const { user, token } = message;
 
     // Store auth data in chrome.storage
+    // Both the extension and website share the same Firebase project
+    // The website handles OAuth, and sends the token + user info here
+    // The extension uses this to identify the user for Firestore queries
     await chrome.storage.local.set({
       user: {
         uid: user.uid,
@@ -55,6 +60,8 @@ async function handleAuthSuccess(message, sender, sendResponse) {
     });
 
     console.log('User authenticated:', user.email);
+    console.log('Extension can now make Firebase queries for user:', user.uid);
+
     sendResponse({ success: true });
   } catch (error) {
     console.error('Failed to store auth data:', error);
@@ -70,6 +77,7 @@ async function handleInterceptedLink(data, tab) {
 }
 
 // Save a link to the queue
+// TODO: Update this to save to Firestore instead of local storage
 async function saveToQueue(url, title) {
   return new Promise((resolve) => {
     chrome.storage.local.get(['queue'], (result) => {
@@ -90,6 +98,43 @@ async function saveToQueue(url, title) {
       chrome.storage.local.set({ queue }, () => resolve(true));
     });
   });
+}
+
+// Example: Save link to Firestore (use this instead of saveToQueue once ready)
+async function saveToFirestore(url, title) {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      console.error('User not authenticated, cannot save to Firestore');
+      return false;
+    }
+
+    // Check for duplicates
+    const linksRef = collection(db, 'links');
+    const q = query(linksRef, where('userId', '==', user.uid), where('url', '==', url));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      console.log('Link already exists in Firestore');
+      return false;
+    }
+
+    // Add new link
+    await addDoc(collection(db, 'links'), {
+      userId: user.uid,
+      url: url,
+      title: title || url,
+      timestamp: Date.now(),
+      createdAt: new Date().toISOString()
+    });
+
+    console.log('Link saved to Firestore');
+    return true;
+  } catch (error) {
+    console.error('Failed to save to Firestore:', error);
+    return false;
+  }
 }
 
 // Show notification that link was saved
