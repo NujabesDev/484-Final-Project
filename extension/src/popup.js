@@ -26,7 +26,7 @@ const userName = document.getElementById('userName');
 const userEmail = document.getElementById('userEmail');
 
 // Auth website URL (update this with your deployed URL)
-const AUTH_URL = 'http://localhost:5173/'; // Change to your deployed URL in production
+const AUTH_URL = 'https://484-final-project-three.vercel.app/';
 
 // Initialize popup
 async function init() {

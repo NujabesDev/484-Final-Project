@@ -3,7 +3,7 @@ import { db, getCurrentUser, isAuthenticated } from './firebase-config.js';
 import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 
 // Website URL for authentication (update this with your deployed URL)
-const WEBSITE_URL = 'http://localhost:5173/'; // Change to production URL when deployed
+const WEBSITE_URL = 'https://484-final-project-three.vercel.app/';
 
 chrome.runtime.onInstalled.addListener((details) => {
   console.log('Read Later Random extension installed!');
