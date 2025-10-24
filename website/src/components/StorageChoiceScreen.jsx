@@ -9,11 +9,20 @@ export function StorageChoiceScreen({ onNext, onBack, onChoose, extensionParams 
 
   const isExtensionFlow = extensionParams && extensionParams.extensionId
 
-  // Send auth data to extension
+  // Send auth data to extension (supports both Chrome and Firefox)
   const sendToExtension = async (user, token) => {
     return new Promise((resolve, reject) => {
       try {
-        chrome.runtime.sendMessage(
+        // Firefox uses 'browser' API, Chrome uses 'chrome' API
+        const runtime = typeof browser !== 'undefined' ? browser.runtime :
+                       typeof chrome !== 'undefined' ? chrome.runtime : null;
+
+        if (!runtime) {
+          reject(new Error('Browser extension API not available'));
+          return;
+        }
+
+        runtime.sendMessage(
           extensionParams.extensionId,
           {
             action: 'AUTH_SUCCESS',
@@ -26,8 +35,9 @@ export function StorageChoiceScreen({ onNext, onBack, onChoose, extensionParams 
             token: token
           },
           (response) => {
-            if (chrome.runtime.lastError) {
-              reject(new Error(chrome.runtime.lastError.message))
+            const lastError = runtime.lastError;
+            if (lastError) {
+              reject(new Error(lastError.message))
             } else if (response?.success) {
               resolve(response)
             } else {
