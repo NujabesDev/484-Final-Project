@@ -289,7 +289,6 @@ saveCurrentBtn.addEventListener('click', async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (tab) {
     await saveLink(tab.url, tab.title);
-    alert('Page saved!');
   }
 });
 
