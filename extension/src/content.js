@@ -1,100 +1,74 @@
 // Content script for click interception on blocked sites
 // Runs on sites that the user has blocked in productivity mode
 
-(function() {
+(function () {
   'use strict';
 
-  let isProductivityModeEnabled = false;
+  let isProductivityModeEnabled = true;
 
   // Initialize by checking settings
   chrome.storage.local.get(['productivityMode'], (result) => {
-    isProductivityModeEnabled = result.productivityMode || false;
+    isProductivityModeEnabled = result.productivityMode;
   });
 
   // Listen for settings changes
-  chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName === 'local' && changes.productivityMode) {
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.productivityMode) {
       isProductivityModeEnabled = changes.productivityMode.newValue;
     }
   });
 
-  // Intercept all clicks in capture phase (before they bubble)
-  document.addEventListener('click', handleClick, true);
-  document.addEventListener('auxclick', handleClick, true); // Middle-click
-  document.addEventListener('keydown', handleKeydown, true);
+  // Intercept all clicks from user
+  document.addEventListener('click', handleClick, true); // left click
+  document.addEventListener('auxclick', handleClick, true); // middle click
+  // document.addEventListener('keydown', handleKeydown, true); // enter key
 
+  // current way of finding links when user clicks, will add more to this later
   function handleClick(event) {
     if (!isProductivityModeEnabled) return;
 
+    // finds closest <a> tag with user click
     const link = event.target.closest('a');
+
     if (!link || !link.href) return;
+    if (!link.href.startsWith('http')) return;
 
-    // Block YouTube videos specifically
-    if (link.href.includes('youtube.com/watch')) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
 
-      chrome.runtime.sendMessage({
-        type: 'LINK_INTERCEPTED',
-        url: link.href,
-        title: link.textContent.trim() || link.href
-      });
-      return;
-    }
-
-    // Block Reddit posts/comments
+    // Block Reddit posts
     if (link.href.includes('reddit.com/r/') && link.href.includes('/comments/')) {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-
-      chrome.runtime.sendMessage({
-        type: 'LINK_INTERCEPTED',
-        url: link.href,
-        title: link.textContent.trim() || link.href
-      });
+      interceptLink(link);
       return;
     }
-
-    // Allow everything else (navigation tabs, etc.)
   }
 
-  function handleKeydown(event) {
-    if (!isProductivityModeEnabled) return;
+  // function handleKeydown(event) {
+  //   if (!isProductivityModeEnabled) return;
 
-    if (event.key === 'Enter') {
-      const link = document.activeElement;
-      if (link && link.tagName === 'A' && link.href) {
-        // Block YouTube videos
-        if (link.href.includes('youtube.com/watch')) {
-          event.preventDefault();
-          event.stopPropagation();
-          event.stopImmediatePropagation();
+  //   if (event.key === 'Enter') {
+  //     const link = document.activeElement;
+  //     if (link && link.tagName === 'A' && link.href) {
 
-          chrome.runtime.sendMessage({
-            type: 'LINK_INTERCEPTED',
-            url: link.href,
-            title: link.textContent.trim() || link.href
-          });
-          return;
-        }
+  //       // Block Reddit posts
+  //       if (link.href.includes('reddit.com/r/') && link.href.includes('/comments/')) {
+  //         event.preventDefault();
+  //         event.stopPropagation();
+  //         event.stopImmediatePropagation();
+  //         interceptLink(link);
+  //         return;
+  //       }
+  //     }
+  //   }
+  // }
 
-        // Block Reddit posts
-        if (link.href.includes('reddit.com/r/') && link.href.includes('/comments/')) {
-          event.preventDefault();
-          event.stopPropagation();
-          event.stopImmediatePropagation();
-
-          chrome.runtime.sendMessage({
-            type: 'LINK_INTERCEPTED',
-            url: link.href,
-            title: link.textContent.trim() || link.href
-          });
-          return;
-        }
-      }
-    }
+  function interceptLink(link) {
+    chrome.runtime.sendMessage({
+      type: 'LINK_INTERCEPTED',
+      url: link.href,
+      title: link.textContent.trim() || link.href
+    });
   }
 
   console.log('Read Later Random: Content script loaded');

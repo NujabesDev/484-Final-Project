@@ -1,5 +1,5 @@
 // Background service worker
-import { db, getCurrentUser, isAuthenticated } from './firebase-config.js';
+import { db, getCurrentUser, isAuthenticated, signInWithStoredToken } from './firebase-config.js';
 import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 
 // Website URL for authentication
@@ -7,6 +7,7 @@ const WEBSITE_URL = 'https://484-final-project-three.vercel.app/';
 
 chrome.runtime.onInstalled.addListener((details) => {
   console.log('Read Later Random extension installed!');
+  chrome.storage.local.set({ productivityMode: true });
 
   // Auto-open website on first install (not on updates)
   if (details.reason === 'install') {
@@ -14,7 +15,11 @@ chrome.runtime.onInstalled.addListener((details) => {
     const authUrl = `${WEBSITE_URL}?source=extension&extensionId=${extensionId}`;
     chrome.tabs.create({ url: authUrl });
     console.log('Opening website for first-time setup:', authUrl);
+
   }
+
+
+
 });
 
 // Listen for messages from content script AND website
@@ -67,7 +72,15 @@ async function handleAuthSuccess(message, sender, sendResponse) {
     });
 
     console.log('User authenticated:', user.email);
-    console.log('Extension can now make Firebase queries for user:', user.uid);
+
+    // Sign in to Firebase Auth with the Google OAuth token
+    // This is required for Firestore queries to work with security rules
+    const firebaseUser = await signInWithStoredToken();
+    if (firebaseUser) {
+      console.log('Extension signed in to Firebase:', firebaseUser.uid);
+    } else {
+      console.error('Failed to sign in to Firebase');
+    }
 
     sendResponse({ success: true });
   } catch (error) {
@@ -96,6 +109,9 @@ async function saveToQueue(url, title) {
       console.error('User not authenticated - cannot save link');
       return false;
     }
+
+    // Ensure we're signed in to Firebase Auth
+    await signInWithStoredToken();
 
     // Check for duplicates in Firestore
     const linksRef = collection(db, 'users', user.uid, 'links');
