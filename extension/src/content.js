@@ -73,3 +73,4 @@
 
   console.log('Read Later Random: Content script loaded');
 })();
+
