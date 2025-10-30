@@ -1,5 +1,5 @@
 // Background service worker
-import { db, getCurrentUser, isAuthenticated } from './firebase-config.js';
+import { db, getCurrentUser, isAuthenticated, signInWithStoredToken } from './firebase-config.js';
 import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 
 // Website URL for authentication
@@ -69,6 +69,14 @@ async function handleAuthSuccess(message, sender, sendResponse) {
     console.log('User authenticated:', user.email);
     console.log('Extension can now make Firebase queries for user:', user.uid);
 
+    // Sign in to Firebase Auth with the token so Firestore queries work
+    try {
+      await signInWithStoredToken();
+      console.log('Extension signed in to Firebase Auth');
+    } catch (error) {
+      console.error('Failed to sign in to Firebase Auth:', error);
+    }
+
     sendResponse({ success: true });
   } catch (error) {
     console.error('Failed to store auth data:', error);
@@ -96,6 +104,9 @@ async function saveToQueue(url, title) {
       console.error('User not authenticated - cannot save link');
       return false;
     }
+
+    // Ensure we're signed in to Firebase Auth
+    await signInWithStoredToken();
 
     // Check for duplicates in Firestore
     const linksRef = collection(db, 'users', user.uid, 'links');

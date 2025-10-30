@@ -1,4 +1,4 @@
-import { db } from './firebase-config.js';
+import { db, signInWithStoredToken } from './firebase-config.js';
 import { collection, getDocs, addDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 
 // Global state
@@ -34,6 +34,12 @@ const AUTH_URL = 'https://484-final-project-three.vercel.app/';
 // Initialize popup
 async function init() {
   await loadAuthState();
+
+  // Sign in to Firebase Auth if we have a stored token
+  if (currentUser) {
+    await signInWithStoredToken();
+  }
+
   await loadQueue();
   await loadProductivityMode();
   displayRandomLink();
