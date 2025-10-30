@@ -75,9 +75,9 @@ Browser extension + web dashboard for saving links and retrieving them randomly.
 ## Firebase Configuration
 
 ### Shared Firebase Project
-- Project ID: `final-project-47da5`
+- Project ID: `cs484-extension-493e5`
 - API Key: `AIzaSyAG5sAYJWlPxbPWBt4F4Hn5P9O-DJZzGOA`
-- Auth Domain: `final-project-47da5.firebaseapp.com`
+- Auth Domain: `cs484-extension-493e5.firebaseapp.com`
 
 ### Storage Locations
 
@@ -93,7 +93,7 @@ Browser extension + web dashboard for saving links and retrieving them randomly.
 - `user` - User object (uid, email, displayName, photoURL)
 - `authToken` - Firebase ID token
 - `authTimestamp` - When auth was completed
-- `productivityMode` - UI toggle preference
+- `productivityMode` - Boolean toggle for auto-intercept feature
 
 **Note:** Links/queue are NOT stored in chrome.storage.local - everything is in Firestore
 
@@ -192,14 +192,15 @@ npm run build        # Builds for production
 
 **What it does:** Prevents impulsive link clicking on Reddit and YouTube by intercepting clicks and saving links for later instead.
 
-**When enabled:**
-- Content script (`content.js`) runs on `*.reddit.com` and `*.youtube.com`
-- Intercepts clicks on:
-  - YouTube video links (`youtube.com/watch`)
-  - Reddit post/comment links (`reddit.com/r/.../comments/...`)
-- Prevents navigation and saves link to Firestore automatically
-- Shows "Saved for later!" notification
-- Other navigation (tabs, homepage, etc.) still works normally
+**Toggle behavior:**
+- **ON**: Content script intercepts clicks on Reddit/YouTube and auto-saves links
+  - Intercepts YouTube video links (`youtube.com/watch`)
+  - Intercepts Reddit post/comment links (`reddit.com/r/.../comments/...`)
+  - Prevents navigation and saves to Firestore automatically
+  - Shows "Saved for later!" notification
+- **OFF**: Normal browsing - no link interception
+  - User can still manually save links via extension popup
+  - Content script still loaded but doesn't intercept clicks
 
 **Storage:** Productivity mode preference stored in `chrome.storage.local.productivityMode`
 

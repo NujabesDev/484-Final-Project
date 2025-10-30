@@ -3,6 +3,7 @@ import { WelcomeScreen } from '@/components/WelcomeScreen'
 import { StorageChoiceScreen } from '@/components/StorageChoiceScreen'
 import { DashboardIntroScreen } from '@/components/DashboardIntroScreen'
 import { DashboardScreen } from '@/components/DashboardScreen'
+import { onAuthChange } from '@/lib/auth'
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState(0)
@@ -10,6 +11,24 @@ function App() {
   const [isLeftHovered, setIsLeftHovered] = useState(false)
   const [isRightHovered, setIsRightHovered] = useState(false)
   const [extensionParams, setExtensionParams] = useState(null)
+  const [user, setUser] = useState(null)
+  const [authChecked, setAuthChecked] = useState(false)
+
+  // Check authentication state on mount
+  useEffect(() => {
+    const unsubscribe = onAuthChange((currentUser) => {
+      setUser(currentUser)
+      setAuthChecked(true)
+
+      // If user is already authenticated, go straight to dashboard
+      if (currentUser) {
+        setStorageChoice('google')
+        setCurrentScreen(3)
+      }
+    })
+
+    return () => unsubscribe()
+  }, [])
 
   // Detect if this is an extension-initiated auth flow
   useEffect(() => {
@@ -33,7 +52,7 @@ function App() {
       onChoose={(choice) => setStorageChoice(choice)}
       extensionParams={extensionParams}
     />,
-    <DashboardScreen key="dashboard" storageChoice={storageChoice} />,
+    <DashboardScreen key="dashboard" storageChoice={storageChoice} user={user} />,
   ]
 
   const handleLeftThirdClick = () => {

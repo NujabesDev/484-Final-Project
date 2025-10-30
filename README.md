@@ -9,7 +9,6 @@ A browser extension and web dashboard for saving links to read later, then retri
 cd extension
 npm install
 npm run build
-npm run copy-files
 ```
 
 ### Load in Chrome
