@@ -1,6 +1,8 @@
 // Content script for click interception on blocked sites
 // Runs on sites that the user has blocked in productivity mode
 
+// TODO: works to intercept user click and keyboard inputs but reddit comment button still gets through
+
 (function () {
   'use strict';
 
@@ -21,7 +23,7 @@
   // Intercept all clicks from user
   document.addEventListener('click', handleClick, true); // left click
   document.addEventListener('auxclick', handleClick, true); // middle click
-  // document.addEventListener('keydown', handleKeydown, true); // enter key
+  document.addEventListener('keydown', handleKeydown, true); // enter key
 
   // current way of finding links when user clicks, will add more to this later
   function handleClick(event) {
@@ -44,34 +46,35 @@
     }
   }
 
-  // function handleKeydown(event) {
-  //   if (!isProductivityModeEnabled) return;
+  function handleKeydown(event) {
+    if (!isProductivityModeEnabled) return;
 
-  //   if (event.key === 'Enter') {
-  //     const link = document.activeElement;
-  //     if (link && link.tagName === 'A' && link.href) {
+    if (event.key === 'Enter') {
+      const link = document.activeElement;
+      if (link && link.tagName === 'A' && link.href) {
 
-  //       // Block Reddit posts
-  //       if (link.href.includes('reddit.com/r/') && link.href.includes('/comments/')) {
-  //         event.preventDefault();
-  //         event.stopPropagation();
-  //         event.stopImmediatePropagation();
-  //         interceptLink(link);
-  //         return;
-  //       }
-  //     }
-  //   }
-  // }
+        // Block Reddit posts
+        if (link.href.includes('reddit.com/r/') && link.href.includes('/comments/')) {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          interceptLink(link);
+          return;
+        }
+      }
+    }
+  }
 
   function interceptLink(link) {
+    // Try multiple methods to get a good title
+    const title = link.getAttribute('title') || link.textContent.trim() || link.href;
+
     chrome.runtime.sendMessage({
       type: 'LINK_INTERCEPTED',
       url: link.href,
-      title: link.textContent.trim() || link.href
+      title: title
     });
   }
 
   console.log('Read Later Random: Content script loaded');
 })();
-
-y
