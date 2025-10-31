@@ -23,10 +23,8 @@ const productivityToggle = document.getElementById('productivityToggle');
 const signedOutDiv = document.getElementById('signedOut');
 const signedInDiv = document.getElementById('signedIn');
 const signInBtn = document.getElementById('signInBtn');
-const signOutBtn = document.getElementById('signOutBtn');
+const dashboardBtn = document.getElementById('dashboardBtn');
 const userAvatar = document.getElementById('userAvatar');
-const userName = document.getElementById('userName');
-const userEmail = document.getElementById('userEmail');
 
 // Auth website URL
 const AUTH_URL = 'https://484-final-project-three.vercel.app/';
@@ -64,8 +62,6 @@ function updateAuthUI() {
     // Signed in
     signedOutDiv.style.display = 'none';
     signedInDiv.style.display = 'block';
-    userName.textContent = currentUser.displayName || 'User';
-    userEmail.textContent = currentUser.email || '';
     userAvatar.src = currentUser.photoURL || 'https://via.placeholder.com/32';
   } else {
     // Signed out
@@ -100,14 +96,9 @@ async function handleSignIn() {
   });
 }
 
-// Handle sign out
-async function handleSignOut() {
-  await chrome.storage.local.remove(['user', 'authToken', 'authTimestamp']);
-  currentUser = null;
-  queue = []; // Clear queue on sign out
-  updateAuthUI();
-  updateQueueCount();
-  displayRandomLink();
+// Handle dashboard button click
+function handleDashboard() {
+  chrome.tabs.create({ url: AUTH_URL });
 }
 
 // Load queue from storage
@@ -254,7 +245,6 @@ async function deleteLink(id) {
     // Remove from local queue array for immediate UI update
     queue = queue.filter(link => link.id !== id);
     updateQueueCount();
-    displayRandomLink();
   } catch (error) {
     console.error('Failed to delete link from Firestore:', error);
     alert('Failed to delete link. Please try again.');
@@ -265,9 +255,7 @@ async function deleteLink(id) {
 async function openAndRemove(id) {
   const link = queue.find(l => l.id === id);
   if (link) {
-    // Open in new tab
     chrome.tabs.create({ url: link.url });
-    // Remove from queue
     await deleteLink(id);
   }
 }
@@ -276,26 +264,25 @@ async function openAndRemove(id) {
 openBtn.addEventListener('click', async () => {
   if (currentLink) {
     await openAndRemove(currentLink.id);
+    displayRandomLink();
   }
 });
 
 skipBtn.addEventListener('click', () => {
-  // Just show another random link (current one stays in queue)
   displayRandomLink();
 });
 
 deleteBtn.addEventListener('click', async () => {
   if (currentLink) {
     await deleteLink(currentLink.id);
+    displayRandomLink();
   }
 });
 
 saveCurrentBtn.addEventListener('click', async () => {
-  // Get the current active tab
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (tab) {
     await saveLink(tab.url, tab.title);
-    alert('Page saved!');
   }
 });
 
@@ -308,7 +295,7 @@ productivityToggle.addEventListener('click', async () => {
 
 // Auth button listeners
 signInBtn.addEventListener('click', handleSignIn);
-signOutBtn.addEventListener('click', handleSignOut);
+dashboardBtn.addEventListener('click', handleDashboard);
 
 // Initialize when popup opens
 init();
