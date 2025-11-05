@@ -130,7 +130,7 @@ async function loadQueue() {
         id: doc.id, // Use Firestore document ID
         url: doc.data().url,
         title: doc.data().title,
-        timestamp: doc.data().timestamp
+        timestamp: doc.data().createdAt
       });
     });
 
@@ -217,7 +217,6 @@ async function saveLink(url, title) {
     const docRef = await addDoc(collection(db, 'users', currentUser.uid, 'links'), {
       url: url,
       title: title || url,
-      timestamp: Date.now(),
       createdAt: Date.now()
     });
 

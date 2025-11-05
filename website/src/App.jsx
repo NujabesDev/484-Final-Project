@@ -48,7 +48,6 @@ function App() {
     <StorageChoiceScreen
       key="storage"
       onNext={() => setCurrentScreen(3)}
-      onBack={() => setCurrentScreen(1)}
       onChoose={(choice) => setStorageChoice(choice)}
       extensionParams={extensionParams}
     />,

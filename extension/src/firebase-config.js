@@ -66,7 +66,7 @@ export async function signInWithStoredToken() {
         error.code === 'auth/user-token-expired' ||
         error.code === 'auth/invalid-id-token') {
       console.log('Token expired or invalid, clearing auth data');
-      await chrome.storage.local.remove(['user', 'authToken', 'authTimestamp']);
+      await chrome.storage.local.remove(['user', 'authToken']);
     }
 
     throw error; // Re-throw so caller can handle (e.g., show "Please sign in again")

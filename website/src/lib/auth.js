@@ -47,11 +47,3 @@ export const signOut = async () => {
 export const onAuthChange = (callback) => {
   return onAuthStateChanged(auth, callback);
 };
-
-/**
- * Get current user
- * @returns {User | null}
- */
-export const getCurrentUser = () => {
-  return auth.currentUser;
-};

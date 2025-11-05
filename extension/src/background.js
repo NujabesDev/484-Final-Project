@@ -55,8 +55,7 @@ async function handleAuthSuccess(message, sender, sendResponse) {
         displayName: user.displayName,
         photoURL: user.photoURL
       },
-      authToken: token,
-      authTimestamp: Date.now()
+      authToken: token
     });
 
     console.log('User authenticated:', user.email);
