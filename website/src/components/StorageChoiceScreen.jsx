@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { signInWithGoogle } from '@/lib/auth'
 
-export function StorageChoiceScreen({ onNext, onBack, onChoose, extensionParams }) {
+export function StorageChoiceScreen({ onNext, onChoose, extensionParams }) {
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)

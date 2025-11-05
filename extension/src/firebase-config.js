@@ -44,26 +44,15 @@ export async function signInWithStoredToken() {
     }
 
     // Get stored Google OAuth ID token from website auth
-    const result = await chrome.storage.local.get(['authToken', 'user', 'authTimestamp']);
+    const result = await chrome.storage.local.get(['authToken', 'user']);
 
     if (!result.authToken || !result.user) {
       console.log('No stored auth token found');
       return null;
     }
 
-    // Check if token is expired (Google OAuth tokens expire after 1 hour)
-    // If token is older than 55 minutes, prompt re-authentication
-    const tokenAge = Date.now() - (result.authTimestamp || 0);
-    const TOKEN_MAX_AGE = 55 * 60 * 1000; // 55 minutes in milliseconds
-
-    if (tokenAge > TOKEN_MAX_AGE) {
-      console.log('Token is older than 55 minutes, may be expired');
-      // Clear old token and prompt re-auth
-      await chrome.storage.local.remove(['user', 'authToken', 'authTimestamp']);
-      throw new Error('TOKEN_EXPIRED');
-    }
-
     // Create Google credential from Google OAuth ID token and sign in
+    // Firebase will throw an error if the token is expired, which we catch below
     const credential = GoogleAuthProvider.credential(result.authToken);
     const userCredential = await signInWithCredential(auth, credential);
 
@@ -72,43 +61,16 @@ export async function signInWithStoredToken() {
   } catch (error) {
     console.error('Failed to sign in with stored token:', error);
 
-    // Handle expired or invalid tokens
-    if (error.message === 'TOKEN_EXPIRED' ||
-        error.code === 'auth/invalid-credential' ||
+    // Handle expired or invalid tokens - Firebase will tell us if token is bad
+    if (error.code === 'auth/invalid-credential' ||
         error.code === 'auth/user-token-expired' ||
         error.code === 'auth/invalid-id-token') {
       console.log('Token expired or invalid, clearing auth data');
-      await chrome.storage.local.remove(['user', 'authToken', 'authTimestamp']);
+      await chrome.storage.local.remove(['user', 'authToken']);
     }
 
     throw error; // Re-throw so caller can handle (e.g., show "Please sign in again")
   }
-}
-
-/**
- * Get current authenticated user from storage
- */
-export async function getCurrentUser() {
-  try {
-    const result = await chrome.storage.local.get(['user', 'authToken']);
-
-    if (result.user && result.authToken) {
-      return result.user;
-    }
-
-    return null;
-  } catch (error) {
-    console.error('Failed to get current user:', error);
-    return null;
-  }
-}
-
-/**
- * Check if user is authenticated
- */
-export async function isAuthenticated() {
-  const user = await getCurrentUser();
-  return user !== null;
 }
 
 export default app;
