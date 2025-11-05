@@ -69,15 +69,24 @@ export function StorageChoiceScreen({ onNext, onBack, onChoose, extensionParams 
 
       if (isExtensionFlow) {
         // Extension-initiated flow - send Google OAuth ID token to extension
-        // GoogleAuthProvider.credential() requires the Google OAuth ID token, not Firebase ID token
-        const googleIdToken = result._tokenResponse?.oauthIdToken
+        //
+        // TOKEN FLOW EXPLANATION:
+        // 1. User signs in via Google OAuth popup (signInWithGoogle)
+        // 2. Firebase returns a UserCredential with _tokenResponse.oauthIdToken
+        // 3. This oauthIdToken is the Google OAuth ID token (NOT a Firebase ID token)
+        // 4. We send this Google OAuth ID token to the extension
+        // 5. Extension uses GoogleAuthProvider.credential(googleOAuthToken) to create a credential
+        // 6. Extension then uses signInWithCredential() to authenticate with Firebase
+        //
+        // This token is valid for 1 hour from Google's OAuth service
+        const googleOAuthIdToken = result._tokenResponse?.oauthIdToken
 
-        if (!googleIdToken) {
+        if (!googleOAuthIdToken) {
           throw new Error('No Google OAuth ID token found in sign-in result')
         }
 
         try {
-          await sendToExtension(user, googleIdToken)
+          await sendToExtension(user, googleOAuthIdToken)
           setSuccess('✓ Successfully synced with extension!')
           setLoading(false)
 

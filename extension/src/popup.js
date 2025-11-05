@@ -35,7 +35,17 @@ async function init() {
 
   // Sign in to Firebase Auth if we have a stored token
   if (currentUser) {
-    await signInWithStoredToken();
+    try {
+      await signInWithStoredToken();
+    } catch (error) {
+      // Token expired or invalid - clear auth state and show sign-in UI
+      if (error.message === 'TOKEN_EXPIRED' ||
+          error.code?.startsWith('auth/')) {
+        console.log('Token expired, user needs to sign in again');
+        currentUser = null;
+        queue = [];
+      }
+    }
   }
 
   await loadQueue();

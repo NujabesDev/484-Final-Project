@@ -106,7 +106,17 @@ async function saveToQueue(url, title) {
     }
 
     // Ensure we're signed in to Firebase Auth
-    await signInWithStoredToken();
+    try {
+      await signInWithStoredToken();
+    } catch (error) {
+      // Token expired - user needs to sign in again
+      if (error.message === 'TOKEN_EXPIRED' ||
+          error.code?.startsWith('auth/')) {
+        console.error('Auth token expired, cannot save link');
+        return false;
+      }
+      throw error; // Re-throw other errors
+    }
 
     // Check for duplicates in Firestore
     const linksRef = collection(db, 'users', user.uid, 'links');

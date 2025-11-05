@@ -21,8 +21,19 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 /**
- * Sign in to Firebase Auth using the Firebase ID token from website
- * This authenticates the extension so Firestore security rules work
+ * Sign in to Firebase Auth using the Google OAuth ID token from website
+ *
+ * TOKEN FLOW:
+ * 1. Website performs Google OAuth and gets a Google OAuth ID token (oauthIdToken)
+ * 2. Website sends this token to extension via postMessage
+ * 3. Extension stores it in chrome.storage.local as 'authToken'
+ * 4. This function retrieves that token and creates a Firebase credential
+ * 5. Firebase accepts the Google OAuth ID token and signs the user in
+ *
+ * NOTE: This is a Google OAuth ID token, NOT a Firebase ID token.
+ * It's valid for ~1 hour from when Google issued it.
+ *
+ * This authenticates the extension so Firestore security rules work.
  */
 export async function signInWithStoredToken() {
   try {
@@ -32,15 +43,27 @@ export async function signInWithStoredToken() {
       return auth.currentUser;
     }
 
-    // Get stored Firebase ID token from website auth
-    const result = await chrome.storage.local.get(['authToken', 'user']);
+    // Get stored Google OAuth ID token from website auth
+    const result = await chrome.storage.local.get(['authToken', 'user', 'authTimestamp']);
 
     if (!result.authToken || !result.user) {
       console.log('No stored auth token found');
       return null;
     }
 
-    // Create Google credential from Firebase ID token and sign in
+    // Check if token is expired (Google OAuth tokens expire after 1 hour)
+    // If token is older than 55 minutes, prompt re-authentication
+    const tokenAge = Date.now() - (result.authTimestamp || 0);
+    const TOKEN_MAX_AGE = 55 * 60 * 1000; // 55 minutes in milliseconds
+
+    if (tokenAge > TOKEN_MAX_AGE) {
+      console.log('Token is older than 55 minutes, may be expired');
+      // Clear old token and prompt re-auth
+      await chrome.storage.local.remove(['user', 'authToken', 'authTimestamp']);
+      throw new Error('TOKEN_EXPIRED');
+    }
+
+    // Create Google credential from Google OAuth ID token and sign in
     const credential = GoogleAuthProvider.credential(result.authToken);
     const userCredential = await signInWithCredential(auth, credential);
 
@@ -49,15 +72,16 @@ export async function signInWithStoredToken() {
   } catch (error) {
     console.error('Failed to sign in with stored token:', error);
 
-    // Token might be expired or invalid, clear it
-    if (error.code === 'auth/invalid-credential' ||
+    // Handle expired or invalid tokens
+    if (error.message === 'TOKEN_EXPIRED' ||
+        error.code === 'auth/invalid-credential' ||
         error.code === 'auth/user-token-expired' ||
         error.code === 'auth/invalid-id-token') {
       console.log('Token expired or invalid, clearing auth data');
       await chrome.storage.local.remove(['user', 'authToken', 'authTimestamp']);
     }
 
-    return null;
+    throw error; // Re-throw so caller can handle (e.g., show "Please sign in again")
   }
 }
 
