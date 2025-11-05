@@ -7,8 +7,8 @@
   <link rel="stylesheet" href="popup-css.css">
 </head>
 
-<body class="w-[400px] h-[500px] m-0 p-0 bg-black text-white overflow-hidden font-sans dot-grid-bg">
-  <div class="relative z-10 h-full flex flex-col">
+<body class="w-[400px] min-h-[360px] m-0 p-0 bg-black text-white overflow-hidden font-sans dot-grid-bg">
+  <div class="relative z-10 flex flex-col">
 
     <!-- Header with Productivity Mode Toggle -->
     <header class="flex items-center justify-between px-4 py-3 bg-[#0a0a0a] border-b border-[#1a1a1a] shrink-0">
@@ -46,9 +46,9 @@
     <!-- Link Card -->
     <div
       id="linkCard"
-      class="bg-neutral-800 border-t border-b border-[#1a1a1a] px-5 py-4 h-[140px] overflow-hidden shrink-0 flex flex-col justify-center"
+      class="bg-neutral-800 border-t border-b border-[#1a1a1a] px-5 py-4 shrink-0 flex flex-col justify-center"
     >
-      <h3 id="linkTitle" class="font-semibold text-base mb-2 break-words overflow-hidden line-clamp-3 leading-snug">
+      <h3 id="linkTitle" class="font-semibold text-base mb-2 break-words leading-snug">
         No links yet!
       </h3>
       <div id="linkUrl" class="text-xs text-neutral-500 whitespace-nowrap overflow-hidden text-ellipsis"></div>
@@ -57,7 +57,7 @@
     <!-- Empty State -->
     <div
       id="emptyState"
-      class="hidden text-center text-neutral-500 p-4 text-sm bg-neutral-800 border-t border-b border-[#1a1a1a] h-[140px] flex items-center justify-center shrink-0"
+      class="hidden text-center text-neutral-500 p-4 text-sm bg-neutral-800 border-t border-b border-[#1a1a1a] flex items-center justify-center shrink-0"
     >
       Your queue is empty. Save a link below!
     </div>
