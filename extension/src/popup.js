@@ -179,14 +179,33 @@ function displayRandomLink() {
     return;
   }
 
-  // Show the link
-  linkCard.style.display = 'block';
-  emptyState.style.display = 'none';
-  linkTitle.textContent = currentLink.title || 'Untitled';
-  linkUrl.textContent = currentLink.url;
-  openBtn.disabled = false;
-  skipBtn.disabled = false;
-  deleteBtn.disabled = false;
+  // Animate out old content first
+  linkTitle.classList.add('link-exit', 'stagger-1');
+  linkUrl.classList.add('link-exit', 'stagger-2');
+
+  // Wait for exit animation, then update and animate in
+  setTimeout(() => {
+    // Show the link
+    linkCard.style.display = 'block';
+    emptyState.style.display = 'none';
+    linkTitle.textContent = currentLink.title || 'Untitled';
+    linkUrl.textContent = currentLink.url;
+    openBtn.disabled = false;
+    skipBtn.disabled = false;
+    deleteBtn.disabled = false;
+
+    // Remove exit classes and add enter classes
+    linkTitle.classList.remove('link-exit');
+    linkUrl.classList.remove('link-exit');
+    linkTitle.classList.add('link-enter', 'stagger-1');
+    linkUrl.classList.add('link-enter', 'stagger-2');
+
+    // Clean up animation classes after animation completes
+    setTimeout(() => {
+      linkTitle.classList.remove('link-enter', 'stagger-1', 'stagger-2');
+      linkUrl.classList.remove('link-enter', 'stagger-1', 'stagger-2');
+    }, 400);
+  }, 200);
 }
 
 // Update queue count display
