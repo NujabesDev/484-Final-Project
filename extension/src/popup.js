@@ -39,8 +39,7 @@ async function init() {
       await signInWithStoredToken();
     } catch (error) {
       // Token expired or invalid - clear auth state and show sign-in UI
-      if (error.message === 'TOKEN_EXPIRED' ||
-          error.code?.startsWith('auth/')) {
+      if (error.code?.startsWith('auth/')) {
         console.log('Token expired, user needs to sign in again');
         currentUser = null;
         queue = [];
