@@ -11,7 +11,6 @@ export default defineConfig({
         background: resolve(__dirname, 'src/background.js'),
         popup: resolve(__dirname, 'src/popup.js'),
         'popup-css': resolve(__dirname, 'src/popup.css'),
-        content: resolve(__dirname, 'src/content.js'),
         'auth-bridge': resolve(__dirname, 'src/auth-bridge.js'),
       },
       output: {

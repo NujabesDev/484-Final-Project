@@ -4,10 +4,6 @@
   "version": "1.0.0",
   "description": "Save links and view them randomly one at a time",
   "permissions": ["storage", "activeTab", "scripting", "tabs"],
-  "host_permissions": [
-    "*://*.reddit.com/*",
-    "*://*.youtube.com/*"
-  ],
   "action": {
     "default_popup": "popup.html",
     "default_title": "Read Later Random"
@@ -17,14 +13,6 @@
     "type": "module"
   },
   "content_scripts": [
-    {
-      "matches": [
-        "*://*.reddit.com/*",
-        "*://*.youtube.com/*"
-      ],
-      "js": ["content.js"],
-      "run_at": "document_start"
-    },
     {
       "matches": [
         "https://484-final-project-three.vercel.app/*",
