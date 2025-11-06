@@ -8,7 +8,7 @@ import { collection, getDocs, addDoc, deleteDoc, doc, query, where } from 'fireb
  */
 export async function loadLinksFromFirestore(userId) {
   if (!userId) {
-    console.log('User not authenticated - cannot load queue');
+    console.log('User not authenticated');
     return [];
   }
 
@@ -20,7 +20,7 @@ export async function loadLinksFromFirestore(userId) {
     const links = [];
     querySnapshot.forEach((doc) => {
       links.push({
-        id: doc.id, // Use Firestore document ID
+        id: doc.id,
         url: doc.data().url,
         title: doc.data().title,
         timestamp: doc.data().createdAt
@@ -39,7 +39,7 @@ export async function loadLinksFromFirestore(userId) {
  * Save a new link to Firestore
  * @param {string} userId - The user's UID
  * @param {string} url - The URL to save
- * @param {string} title - The title of the page (optional, defaults to url)
+ * @param {string} title - The title of the page
  * @returns {Promise<Object>} The saved link object with {id, url, title, timestamp}
  * @throws {Error} If duplicate or save fails
  */
@@ -54,7 +54,14 @@ export async function saveLinkToFirestore(userId, url, title) {
   const querySnapshot = await getDocs(q);
 
   if (!querySnapshot.empty) {
-    throw new Error('DUPLICATE');
+    // Duplicate logic check
+    const existingDoc = querySnapshot.docs[0];
+    return {
+      id: existingDoc.id,
+      url: existingDoc.data().url,
+      title: existingDoc.data().title,
+      timestamp: existingDoc.data().createdAt
+    };
   }
 
   // Save to Firestore
