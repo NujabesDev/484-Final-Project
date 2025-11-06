@@ -1,5 +1,5 @@
-import { db, signInWithStoredToken } from './firebase-config.js';
-import { collection, getDocs, addDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { signInWithStoredToken } from './firebase-config.js';
+import { loadLinksFromFirestore, saveLinkToFirestore, deleteLinkFromFirestore } from './services/firestore.js';
 
 // Global state
 let currentLink = null;
@@ -156,31 +156,11 @@ function handleDashboard() {
 async function loadQueue() {
   // Require authentication to load queue
   if (!currentUser || !currentUser.uid) {
-    console.log('User not authenticated - cannot load queue');
     queue = [];
     return;
   }
 
-  try {
-    // Load all links from Firestore for the current user
-    const linksRef = collection(db, 'users', currentUser.uid, 'links');
-    const querySnapshot = await getDocs(linksRef);
-
-    queue = [];
-    querySnapshot.forEach((doc) => {
-      queue.push({
-        id: doc.id, // Use Firestore document ID
-        url: doc.data().url,
-        title: doc.data().title,
-        timestamp: doc.data().createdAt
-      });
-    });
-
-    console.log(`Loaded ${queue.length} links from Firestore`);
-  } catch (error) {
-    console.error('Failed to load queue from Firestore:', error);
-    queue = [];
-  }
+  queue = await loadLinksFromFirestore(currentUser.uid);
 }
 
 // Removed saveQueue - no longer needed since we write directly to Firestore
@@ -320,37 +300,22 @@ async function saveLink(url, title) {
   }
 
   try {
-    // Check for duplicates in Firestore
-    const linksRef = collection(db, 'users', currentUser.uid, 'links');
-    const q = query(linksRef, where('url', '==', url));
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-      alert('This link is already in your queue!');
-      return;
-    }
-
-    // Save to Firestore
-    const docRef = await addDoc(collection(db, 'users', currentUser.uid, 'links'), {
-      url: url,
-      title: title || url,
-      createdAt: Date.now()
-    });
+    // Save to Firestore (checks for duplicates internally)
+    const newLink = await saveLinkToFirestore(currentUser.uid, url, title);
 
     // Add to local queue array for immediate UI update
-    queue.push({
-      id: docRef.id,
-      url: url,
-      title: title || url,
-      timestamp: Date.now()
-    });
+    queue.push(newLink);
 
     updateQueueCount();
     displayRandomLink();
     alert('Page saved!');
   } catch (error) {
-    console.error('Failed to save link:', error);
-    alert('Failed to save link. Please try again.');
+    if (error.message === 'DUPLICATE') {
+      alert('This link is already in your queue!');
+    } else {
+      console.error('Failed to save link:', error);
+      alert('Failed to save link. Please try again.');
+    }
   }
 }
 
@@ -364,8 +329,7 @@ async function deleteLink(id) {
 
   try {
     // Delete from Firestore
-    await deleteDoc(doc(db, 'users', currentUser.uid, 'links', id));
-    console.log('Link deleted from Firestore:', id);
+    await deleteLinkFromFirestore(currentUser.uid, id);
 
     // Remove from local queue array for immediate UI update
     queue = queue.filter(link => link.id !== id);
