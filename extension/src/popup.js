@@ -7,12 +7,53 @@ let queue = [];
 let productivityMode = false;
 let currentUser = null;
 
+// Helper functions for stats
+// Format timestamp to "2d ago" style
+function getTimeAgo(timestamp) {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+  if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+  if (seconds < 2592000) return Math.floor(seconds / 86400) + 'd ago';
+  return Math.floor(seconds / 2592000) + 'mo ago';
+}
+
+// Extract clean domain from URL
+function simplifyUrl(url) {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname.replace('www.', '');
+  } catch (e) {
+    return url;
+  }
+}
+
+// Get favicon URL from Google service
+function getFaviconUrl(url) {
+  try {
+    const domain = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+  } catch (e) {
+    return '';
+  }
+}
+
+// Calculate chronological position (1 = oldest saved)
+function getChronologicalPosition(linkId) {
+  const sortedByAge = [...queue].sort((a, b) => a.timestamp - b.timestamp);
+  return sortedByAge.findIndex(link => link.id === linkId) + 1;
+}
+
 // DOM elements
 const linkCard = document.getElementById('linkCard');
 const linkTitle = document.getElementById('linkTitle');
 const linkUrl = document.getElementById('linkUrl');
 const emptyState = document.getElementById('emptyState');
 const queueCount = document.getElementById('queueCount');
+const statsRemaining = document.getElementById('statsRemaining');
+const statsPosition = document.getElementById('statsPosition');
+const statsTime = document.getElementById('statsTime');
 const openBtn = document.getElementById('openBtn');
 const skipBtn = document.getElementById('skipBtn');
 const deleteBtn = document.getElementById('deleteBtn');
@@ -182,6 +223,7 @@ function displayRandomLink() {
   // Animate out old content first
   linkTitle.classList.add('link-exit');
   linkUrl.classList.add('link-exit');
+  const linkFavicon = document.getElementById('linkFavicon');
 
   // Wait for exit animation, then update and animate in
   setTimeout(() => {
@@ -189,7 +231,18 @@ function displayRandomLink() {
     linkCard.style.display = 'block';
     emptyState.style.display = 'none';
     linkTitle.textContent = currentLink.title || 'Untitled';
-    linkUrl.textContent = currentLink.url;
+
+    // Update URL with simplified domain
+    const domain = simplifyUrl(currentLink.url);
+    linkUrl.textContent = domain;
+
+    // Update favicon
+    const faviconUrl = getFaviconUrl(currentLink.url);
+    if (faviconUrl && linkFavicon) {
+      linkFavicon.src = faviconUrl;
+      linkFavicon.classList.remove('hidden');
+    }
+
     openBtn.disabled = false;
     skipBtn.disabled = false;
     deleteBtn.disabled = false;
@@ -208,9 +261,28 @@ function displayRandomLink() {
   }, 200);
 }
 
-// Update queue count display
+// Update queue count display with stats
 function updateQueueCount() {
-  queueCount.textContent = `${queue.length} link${queue.length !== 1 ? 's' : ''} in queue`;
+  if (queue.length === 0) {
+    statsRemaining.textContent = 'No links saved';
+    statsPosition.textContent = '';
+    statsTime.textContent = '';
+    return;
+  }
+
+  const remaining = queue.length;
+  statsRemaining.textContent = `${remaining} link${remaining !== 1 ? 's' : ''} remaining`;
+
+  // Update position and time if we have a current link
+  if (currentLink) {
+    const position = getChronologicalPosition(currentLink.id);
+    const timeAgo = getTimeAgo(currentLink.timestamp);
+    statsPosition.textContent = `(${position}/${remaining})`;
+    statsTime.textContent = `Saved ${timeAgo}`;
+  } else {
+    statsPosition.textContent = '';
+    statsTime.textContent = '';
+  }
 }
 
 // Save a new link to the queue

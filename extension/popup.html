@@ -38,9 +38,11 @@
       </button>
     </div>
 
-    <!-- Queue Count -->
-    <div id="queueCount" class="text-center text-xs text-neutral-500 py-3 uppercase tracking-wide shrink-0">
-      Loading...
+    <!-- Queue Count - Grid Layout for Stats -->
+    <div id="queueCount" class="grid grid-cols-3 gap-2 text-center text-xs text-neutral-500 py-3 shrink-0">
+      <div id="statsRemaining">Loading...</div>
+      <div id="statsPosition"></div>
+      <div id="statsTime"></div>
     </div>
 
     <!-- Link Card -->
@@ -51,7 +53,10 @@
       <h3 id="linkTitle" class="font-semibold text-base mb-2 break-words leading-snug">
         No links yet!
       </h3>
-      <div id="linkUrl" class="text-xs text-neutral-500 whitespace-nowrap overflow-hidden text-ellipsis"></div>
+      <div class="flex items-center gap-1.5">
+        <img id="linkFavicon" src="" alt="" class="w-4 h-4 hidden">
+        <div id="linkUrl" class="text-xs text-neutral-500 whitespace-nowrap overflow-hidden text-ellipsis"></div>
+      </div>
     </div>
 
     <!-- Empty State -->
