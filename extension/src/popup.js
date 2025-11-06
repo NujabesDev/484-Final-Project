@@ -282,14 +282,14 @@ function updateQueueCount() {
   }
 
   const remaining = queue.length;
-  statsRemaining.textContent = `${remaining} link${remaining !== 1 ? 's' : ''} remaining`;
+  statsRemaining.textContent = `${remaining} ${remaining !== 1 ? 'links' : 'link'} in queue`;
 
   // Update position and time if we have a current link
   if (currentLink) {
     const position = getChronologicalPosition(currentLink.id);
     const timeAgo = getTimeAgo(currentLink.timestamp);
     statsPosition.textContent = `(${position}/${remaining})`;
-    statsTime.textContent = `Saved ${timeAgo}`;
+    statsTime.textContent = `saved ${timeAgo}`;
   } else {
     statsPosition.textContent = '';
     statsTime.textContent = '';
@@ -375,17 +375,20 @@ openBtn.addEventListener('click', async () => {
   if (currentLink) {
     await openAndRemove(currentLink.id);
     displayRandomLink();
+    updateQueueCount();
   }
 });
 
 skipBtn.addEventListener('click', () => {
   displayRandomLink();
+  updateQueueCount();
 });
 
 deleteBtn.addEventListener('click', async () => {
   if (currentLink) {
     await deleteLink(currentLink.id);
     displayRandomLink();
+    updateQueueCount();
   }
 });
 
