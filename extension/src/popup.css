@@ -13,23 +13,7 @@
   --radius-base: 8px;
 }
 
-/* Dot grid background pattern */
-.dot-grid-bg {
-  position: relative;
-}
-
-.dot-grid-bg::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='1' fill='%23262626' opacity='0.3'/%3E%3C/svg%3E");
-  background-size: 24px 24px;
-  pointer-events: none;
-  z-index: 0;
-}
+/* Dot grid background pattern removed */
 
 /* Productivity toggle active state */
 #productivityToggle.active {
@@ -88,11 +72,4 @@
   animation: slide-fade-out 0.2s ease-out;
 }
 
-/* Staggered animation for title and URL */
-.stagger-1 {
-  animation-delay: 0ms;
-}
-
-.stagger-2 {
-  animation-delay: 80ms;
-}
+/* Staggered animation removed - both animate at same speed */

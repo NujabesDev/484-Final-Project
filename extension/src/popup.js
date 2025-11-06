@@ -180,8 +180,8 @@ function displayRandomLink() {
   }
 
   // Animate out old content first
-  linkTitle.classList.add('link-exit', 'stagger-1');
-  linkUrl.classList.add('link-exit', 'stagger-2');
+  linkTitle.classList.add('link-exit');
+  linkUrl.classList.add('link-exit');
 
   // Wait for exit animation, then update and animate in
   setTimeout(() => {
@@ -197,13 +197,13 @@ function displayRandomLink() {
     // Remove exit classes and add enter classes
     linkTitle.classList.remove('link-exit');
     linkUrl.classList.remove('link-exit');
-    linkTitle.classList.add('link-enter', 'stagger-1');
-    linkUrl.classList.add('link-enter', 'stagger-2');
+    linkTitle.classList.add('link-enter');
+    linkUrl.classList.add('link-enter');
 
     // Clean up animation classes after animation completes
     setTimeout(() => {
-      linkTitle.classList.remove('link-enter', 'stagger-1', 'stagger-2');
-      linkUrl.classList.remove('link-enter', 'stagger-1', 'stagger-2');
+      linkTitle.classList.remove('link-enter');
+      linkUrl.classList.remove('link-enter');
     }, 400);
   }, 200);
 }
