@@ -39,9 +39,11 @@
     </div>
 
     <!-- Queue Count - Grid Layout for Stats -->
-    <div id="queueCount" class="grid grid-cols-3 gap-2 text-center text-xs text-neutral-500 py-3 shrink-0">
+    <div id="queueCount" class="flex items-center justify-center gap-3 text-center text-sm text-neutral-400 py-3 shrink-0">
       <div id="statsRemaining">Loading...</div>
+      <div class="text-neutral-600">•</div>
       <div id="statsPosition"></div>
+      <div class="text-neutral-600">•</div>
       <div id="statsTime"></div>
     </div>
 
@@ -53,8 +55,8 @@
       <h3 id="linkTitle" class="font-semibold text-base mb-2 break-words leading-snug">
         No links yet!
       </h3>
-      <div class="flex items-center gap-1.5">
-        <img id="linkFavicon" src="" alt="" class="w-4 h-4 hidden">
+      <div class="flex items-center gap-2">
+        <img id="linkFavicon" src="" alt="" class="w-5 h-5 hidden">
         <div id="linkUrl" class="text-xs text-neutral-500 whitespace-nowrap overflow-hidden text-ellipsis"></div>
       </div>
     </div>

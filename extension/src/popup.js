@@ -33,7 +33,7 @@ function simplifyUrl(url) {
 function getFaviconUrl(url) {
   try {
     const domain = new URL(url).hostname;
-    return `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
   } catch (e) {
     return '';
   }
@@ -224,6 +224,9 @@ function displayRandomLink() {
   linkTitle.classList.add('link-exit');
   linkUrl.classList.add('link-exit');
   const linkFavicon = document.getElementById('linkFavicon');
+  if (linkFavicon && !linkFavicon.classList.contains('hidden')) {
+    linkFavicon.classList.add('link-exit');
+  }
 
   // Wait for exit animation, then update and animate in
   setTimeout(() => {
@@ -253,10 +256,18 @@ function displayRandomLink() {
     linkTitle.classList.add('link-enter');
     linkUrl.classList.add('link-enter');
 
+    if (linkFavicon && !linkFavicon.classList.contains('hidden')) {
+      linkFavicon.classList.remove('link-exit');
+      linkFavicon.classList.add('link-enter');
+    }
+
     // Clean up animation classes after animation completes
     setTimeout(() => {
       linkTitle.classList.remove('link-enter');
       linkUrl.classList.remove('link-enter');
+      if (linkFavicon) {
+        linkFavicon.classList.remove('link-enter');
+      }
     }, 400);
   }, 200);
 }
