@@ -3,7 +3,7 @@
 ## What is this
 Browser extension + website for saving links and getting them back randomly. Solves choice paralysis.
 
-Tech: React, Firebase (Auth + Firestore), Manifest V3
+Tech: React, Javascript, Firebase (Auth + Firestore), Manifest V3
 
 ## Diagram Components
 - User (browser)
@@ -66,3 +66,13 @@ Firebase AI Logic SDK - calls Gemini from client side
 - Save link → call Gemini → get summary + categories → save to Firestore
 - Free tier: 1000 requests/day (Flash-Lite)
 - Add fields: aiSummary, categories
+
+
+ Removed the bloat:
+    - ❌ Toast notification styles (100+ lines)
+    - ❌ Complex keyframe animations (fadeIn, slideOut, checkmark, pulse)
+    - ❌ Progress indicator styles
+    - ❌ Timestamp display styles
+    - ❌ Favicon styles
+    - ❌ Fixed bottom auth bar complexity
+    - ❌ Excessive padding/spacing

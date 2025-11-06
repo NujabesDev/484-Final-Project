@@ -122,12 +122,12 @@ export function StorageChoiceScreen({ onNext, onChoose, extensionParams }) {
       <div className="max-w-2xl w-full space-y-16">
         <div className="text-center space-y-6 animate-fade-in-up">
           <h2 className="text-6xl md:text-7xl font-serif text-white tracking-tight leading-[0.95] text-balance">
-            {isExtensionFlow ? 'Sign in to Continue' : 'Choose your storage'}
+            Sign In
           </h2>
           <p className="text-neutral-500 text-xl font-light leading-relaxed">
-            {isExtensionFlow
-              ? 'Sign in with your Google account to sync with the extension'
-              : 'Sync across devices or keep it local'}
+            Yes, we are forcing you to sign in.
+            <br></br>
+            Yes, we are sorry.
           </p>
         </div>
 
@@ -147,9 +147,8 @@ export function StorageChoiceScreen({ onNext, onChoose, extensionParams }) {
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className={`max-w-md w-full p-6 bg-white text-black rounded-2xl transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-white/10 flex items-center justify-center gap-4 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
-              selected === "google" ? "scale-[1.02] shadow-2xl shadow-white/10" : ""
-            }`}
+            className={`max-w-md w-full p-6 bg-white text-black rounded-2xl transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-white/10 flex items-center justify-center gap-4 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${selected === "google" ? "scale-[1.02] shadow-2xl shadow-white/10" : ""
+              }`}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
