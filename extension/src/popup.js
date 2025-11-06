@@ -6,6 +6,7 @@ let currentLink = null;
 let queue = [];
 let productivityMode = false;
 let currentUser = null;
+let skippedLinks = []; // Track skipped link IDs - won't show again until all others exhausted
 
 // Helper functions for stats
 // Format timestamp to "2d ago" style
@@ -199,11 +200,25 @@ function updateToggle() {
   }
 }
 
-// Get a random link from the queue
+// Get a random link from the queue (excluding skipped links)
 function getRandomLink() {
   if (queue.length === 0) return null;
-  const randomIndex = Math.floor(Math.random() * queue.length);
-  return queue[randomIndex];
+
+  // Filter out skipped links
+  const availableLinks = queue.filter(link => !skippedLinks.includes(link.id));
+
+  // If all links are skipped, reset the skipped list (cycle complete)
+  if (availableLinks.length === 0 && queue.length > 0) {
+    console.log('All links exhausted, resetting skip queue');
+    skippedLinks = [];
+    const randomIndex = Math.floor(Math.random() * queue.length);
+    return queue[randomIndex];
+  }
+
+  if (availableLinks.length === 0) return null;
+
+  const randomIndex = Math.floor(Math.random() * availableLinks.length);
+  return availableLinks[randomIndex];
 }
 
 // Display a random link in the UI
@@ -354,6 +369,10 @@ async function deleteLink(id) {
 
     // Remove from local queue array for immediate UI update
     queue = queue.filter(link => link.id !== id);
+
+    // Remove from skipped list if present
+    skippedLinks = skippedLinks.filter(skippedId => skippedId !== id);
+
     updateQueueCount();
   } catch (error) {
     console.error('Failed to delete link from Firestore:', error);
@@ -380,6 +399,11 @@ openBtn.addEventListener('click', async () => {
 });
 
 skipBtn.addEventListener('click', () => {
+  // Add current link to skipped list so it won't show again until all others are exhausted
+  if (currentLink && !skippedLinks.includes(currentLink.id)) {
+    skippedLinks.push(currentLink.id);
+    console.log(`Skipped link ${currentLink.id}, ${skippedLinks.length} skipped total`);
+  }
   displayRandomLink();
   updateQueueCount();
 });
