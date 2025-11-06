@@ -1,8 +1,20 @@
 // Background service worker
-import { signInWithStoredToken } from './firebase-config.js';
+import { signInWithStoredToken, auth } from './firebase-config.js';
+import { onAuthStateChanged } from 'firebase/auth/web-extension';
 
 // Website URL for authentication
 const WEBSITE_URL = 'https://484-final-project-three.vercel.app/';
+
+// Restore auth state when service worker wakes up
+// This ensures Firebase auth persists even when the service worker sleeps
+// Firebase automatically restores the session from IndexedDB
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    console.log('Firebase auth state restored:', user.uid);
+  } else {
+    console.log('No authenticated user');
+  }
+});
 
 chrome.runtime.onInstalled.addListener((details) => {
   console.log('Read Later Random extension installed!');

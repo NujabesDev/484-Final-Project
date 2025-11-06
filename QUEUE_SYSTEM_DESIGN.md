@@ -70,3 +70,6 @@ Simple explanation of how the shuffle queue should work.
 ## Result
 
 Smooth Spotify-like experience with no repeated links in a session.
+
+
+add local storage next time too yea
