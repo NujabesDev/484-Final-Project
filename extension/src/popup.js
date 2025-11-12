@@ -245,10 +245,10 @@ function displayRandomLink() {
     linkFavicon.classList.add('link-exit');
   }
 
-  // Wait for exit animation, then update and animate in (120ms for smooth buffer)
+  // Wait for exit animation to complete (150ms)
   setTimeout(() => {
     // Show the link
-    linkCard.style.display = 'block';
+    linkCard.style.display = 'flex';
     emptyState.style.display = 'none';
     linkTitle.textContent = currentLink.title;
 
@@ -284,7 +284,7 @@ function displayRandomLink() {
       linkFavicon.classList.add('link-enter');
     }
 
-    // Clean up animation classes after animation completes
+    // Clean up animation classes after animation completes (150ms)
     setTimeout(() => {
       linkTitle.classList.remove('link-enter');
       linkUrl.classList.remove('link-enter');
@@ -294,8 +294,8 @@ function displayRandomLink() {
 
       // Clear animation flag
       isAnimating = false;
-    }, 200);
-  }, 120);
+    }, 150);
+  }, 150);
 }
 
 // Update queue count display with stats
