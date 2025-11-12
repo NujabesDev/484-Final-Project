@@ -40,37 +40,40 @@
   animation: fade-in-up 0.5s ease-out;
 }
 
-/* Link change animations - smooth slide & fade */
-@keyframes slide-fade-in {
+/* Link change animations - smooth crossfade */
+@keyframes crossfade-out {
   from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-
-  to {
     opacity: 1;
-    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
   }
 }
 
-@keyframes slide-fade-out {
+@keyframes crossfade-in {
   from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-
-  to {
     opacity: 0;
-    transform: translateX(-20px);
   }
-}
-
-.link-enter {
-  animation: slide-fade-in 0.2s ease-out;
+  to {
+    opacity: 1;
+  }
 }
 
 .link-exit {
-  animation: slide-fade-out 0.1s ease-out;
+  animation: crossfade-out 0.15s ease-out;
+}
+
+.link-enter {
+  animation: crossfade-in 0.15s ease-out;
+}
+
+/* GPU acceleration hints for smooth animations */
+#linkTitle,
+#linkUrl,
+#linkFavicon {
+  will-change: opacity;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 /* Standard button animations */
