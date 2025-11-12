@@ -221,7 +221,7 @@ function displayRandomLink() {
     linkFavicon.classList.add('link-exit');
   }
 
-  // Wait for exit animation, then update and animate in
+  // Wait for exit animation, then update and animate in (120ms for smooth buffer)
   setTimeout(() => {
     // Show the link
     linkCard.style.display = 'block';
@@ -232,11 +232,19 @@ function displayRandomLink() {
     const domain = simplifyUrl(currentLink.url);
     linkUrl.textContent = domain;
 
-    // Update favicon
+    // Update favicon with preloading to prevent layout shift
     const faviconUrl = getFaviconUrl(currentLink.url);
     if (faviconUrl && linkFavicon) {
-      linkFavicon.src = faviconUrl;
-      linkFavicon.classList.remove('hidden');
+      // Preload favicon before showing it
+      const img = new Image();
+      img.src = faviconUrl;
+      img.onload = () => {
+        linkFavicon.src = faviconUrl;
+        linkFavicon.classList.remove('hidden');
+      };
+      img.onerror = () => {
+        linkFavicon.classList.add('hidden');
+      };
     } else if (linkFavicon) {
       linkFavicon.classList.add('hidden');
     }
@@ -263,7 +271,7 @@ function displayRandomLink() {
       // Clear animation flag
       isAnimating = false;
     }, 200);
-  }, 100);
+  }, 120);
 }
 
 // Update queue count display with stats
