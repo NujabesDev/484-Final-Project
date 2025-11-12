@@ -54,13 +54,14 @@ const linkUrl = document.getElementById('linkUrl');
 const emptyState = document.getElementById('emptyState');
 const queueCount = document.getElementById('queueCount');
 const statsRemaining = document.getElementById('statsRemaining');
-const statsPosition = document.getElementById('statsPosition');
 const statsTime = document.getElementById('statsTime');
 const openBtn = document.getElementById('openBtn');
 const skipBtn = document.getElementById('skipBtn');
 const deleteBtn = document.getElementById('deleteBtn');
 const saveCurrentBtn = document.getElementById('saveCurrentBtn');
 const productivityToggle = document.getElementById('productivityToggle');
+const skeletonLoading = document.getElementById('skeletonLoading');
+const skeletonCard = document.getElementById('skeletonCard');
 
 // Auth elements
 const signedOutDiv = document.getElementById('signedOut');
@@ -74,6 +75,9 @@ const AUTH_URL = 'https://484-final-project-three.vercel.app/';
 
 // Initialize popup
 async function init() {
+  // Show skeleton loading
+  showSkeleton();
+
   await loadAuthState();
 
   // Sign in to Firebase Auth if we have a stored token
@@ -92,10 +96,30 @@ async function init() {
 
   await loadQueue();
   await loadProductivityMode();
+
+  // Hide skeleton and show content
+  hideSkeleton();
   displayRandomLink();
   updateQueueCount();
   updateToggle();
   updateAuthUI();
+}
+
+// Show skeleton loading state
+function showSkeleton() {
+  queueCount.classList.add('hidden');
+  skeletonLoading.classList.remove('hidden');
+  linkCard.classList.add('hidden');
+  skeletonCard.classList.remove('hidden');
+  skeletonCard.classList.add('flex');
+}
+
+// Hide skeleton loading state
+function hideSkeleton() {
+  queueCount.classList.remove('hidden');
+  skeletonLoading.classList.add('hidden');
+  skeletonCard.classList.add('hidden');
+  skeletonCard.classList.remove('flex');
 }
 
 // Load auth state from storage
@@ -278,22 +302,18 @@ function displayRandomLink() {
 function updateQueueCount() {
   if (queue.length === 0) {
     statsRemaining.textContent = 'No links saved';
-    statsPosition.textContent = '';
     statsTime.textContent = '';
     return;
   }
 
   const remaining = queue.length;
-  statsRemaining.textContent = `${remaining} ${remaining !== 1 ? 'links' : 'link'} in queue`;
+  statsRemaining.textContent = `${remaining} ${remaining !== 1 ? 'links' : 'link'}`;
 
-  // Update position and time if we have a current link
+  // Update time if we have a current link
   if (currentLink) {
-    const position = getChronologicalPosition(currentLink.id);
     const timeAgo = getTimeAgo(currentLink.timestamp);
-    statsPosition.textContent = `(${position}/${remaining})`;
     statsTime.textContent = `saved ${timeAgo}`;
   } else {
-    statsPosition.textContent = '(0/0)';
     statsTime.textContent = 'saved N/A';
   }
 }
