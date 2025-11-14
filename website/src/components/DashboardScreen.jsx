@@ -6,7 +6,7 @@ export function DashboardScreen({ storageChoice, user }) {
       await signOut()
       window.location.reload() // Refresh to go back to welcome screen
     } catch (error) {
-      console.error('Failed to sign out:', error)
+      // Silent failure - page will reload anyway
     }
   }
 
@@ -39,9 +39,7 @@ export function DashboardScreen({ storageChoice, user }) {
         <div className="text-center space-y-12">
           <div className="space-y-4">
             <h1 className="text-5xl font-serif text-white tracking-tight">Your Dashboard</h1>
-            <p className="text-neutral-500 font-light">
-              {storageChoice === 'google' ? 'Synced with Google' : 'Using local storage'}
-            </p>
+            <p className="text-neutral-500 font-light">Synced with Google</p>
           </div>
 
           {/* Simple placeholder for now - just a big text box like requested */}

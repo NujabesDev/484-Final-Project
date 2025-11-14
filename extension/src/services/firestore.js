@@ -8,7 +8,6 @@ import { collection, getDocs, addDoc, deleteDoc, doc, query, where } from 'fireb
  */
 export async function loadLinksFromFirestore(userId) {
   if (!userId) {
-    console.log('User not authenticated');
     return [];
   }
 
@@ -27,10 +26,8 @@ export async function loadLinksFromFirestore(userId) {
       });
     });
 
-    console.log(`Loaded ${links.length} links from Firestore`);
     return links;
   } catch (error) {
-    console.error('Failed to load queue from Firestore:', error);
     return [];
   }
 }
@@ -93,5 +90,4 @@ export async function deleteLinkFromFirestore(userId, linkId) {
   }
 
   await deleteDoc(doc(db, 'users', userId, 'links', linkId));
-  console.log('Link deleted from Firestore:', linkId);
 }

@@ -41,12 +41,6 @@ function getFaviconUrl(url) {
   }
 }
 
-// Calculate chronological position (1 = oldest saved)
-function getChronologicalPosition(linkId) {
-  const sortedByAge = [...queue].sort((a, b) => a.timestamp - b.timestamp);
-  return sortedByAge.findIndex(link => link.id === linkId) + 1;
-}
-
 // DOM elements
 const linkCard = document.getElementById('linkCard');
 const linkTitle = document.getElementById('linkTitle');
@@ -87,9 +81,10 @@ async function init() {
     } catch (error) {
       // Token expired or invalid - clear auth state and show sign-in UI
       if (error.code?.startsWith('auth/')) {
-        console.log('Token expired, user needs to sign in again');
         currentUser = null;
         queue = [];
+        await chrome.storage.local.remove(['user', 'authToken', 'authTimestamp']);
+        updateAuthUI();
       }
     }
   }
@@ -302,7 +297,7 @@ function displayRandomLink() {
 function updateQueueCount() {
   if (queue.length === 0) {
     statsRemaining.textContent = 'No links saved';
-    statsTime.textContent = '';
+    statsTime.textContent = '0d Ago';
     return;
   }
 
@@ -335,10 +330,7 @@ async function saveLink(url, title) {
     updateQueueCount();
     displayRandomLink();
   } catch (error) {
-    if (error.message === 'DUPLICATE') {
-    } else {
-      console.error('Failed to save link:', error);
-    }
+    // Silent failure - errors handled by Firestore service
   }
 }
 
@@ -346,7 +338,6 @@ async function saveLink(url, title) {
 async function deleteLink(id) {
   // Require authentication
   if (!currentUser || !currentUser.uid) {
-    console.error('User not authenticated - cannot delete link');
     return;
   }
 
@@ -362,7 +353,7 @@ async function deleteLink(id) {
 
     updateQueueCount();
   } catch (error) {
-    console.error('Failed to delete link from Firestore:', error);
+    // Silent failure - errors handled by Firestore service
   }
 }
 

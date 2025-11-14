@@ -21,25 +21,15 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 /**
- * Sign in to Firebase Auth using the Google OAuth ID token from website
- *
- * TOKEN FLOW:
- * 1. Website performs Google OAuth and gets a Google OAuth ID token (oauthIdToken)
- * 2. Website sends this token to extension via postMessage
- * 3. Extension stores it in chrome.storage.local as 'authToken'
- * 4. This function retrieves that token and creates a Firebase credential
- * 5. Firebase accepts the Google OAuth ID token and signs the user in
- *
- * NOTE: This is a Google OAuth ID token, NOT a Firebase ID token.
- * It's valid for ~1 hour from when Google issued it.
- *
- * This authenticates the extension so Firestore security rules work.
+ * Sign in to Firebase Auth using the Google OAuth ID token from website.
+ * The website performs OAuth, sends the token via postMessage, and this function
+ * retrieves it from chrome.storage.local to authenticate with Firebase.
+ * This enables Firestore security rules to work properly.
  */
 export async function signInWithStoredToken() {
   try {
     // Check if already signed in
     if (auth.currentUser) {
-      console.log('Already signed in to Firebase:', auth.currentUser.uid);
       return auth.currentUser;
     }
 
@@ -47,7 +37,6 @@ export async function signInWithStoredToken() {
     const result = await chrome.storage.local.get(['authToken', 'user']);
 
     if (!result.authToken || !result.user) {
-      console.log('No stored auth token found');
       return null;
     }
 
@@ -56,20 +45,16 @@ export async function signInWithStoredToken() {
     const credential = GoogleAuthProvider.credential(result.authToken);
     const userCredential = await signInWithCredential(auth, credential);
 
-    console.log('Successfully signed in to Firebase:', userCredential.user.uid);
     return userCredential.user;
   } catch (error) {
-    console.error('Failed to sign in with stored token:', error);
-
     // Handle expired or invalid tokens - Firebase will tell us if token is bad
     if (error.code === 'auth/invalid-credential' ||
         error.code === 'auth/user-token-expired' ||
         error.code === 'auth/invalid-id-token') {
-      console.log('Token expired or invalid, clearing auth data');
       await chrome.storage.local.remove(['user', 'authToken']);
     }
 
-    throw error; // Re-throw so caller can handle (e.g., show "Please sign in again")
+    throw error; // Re-throw so caller can handle
   }
 }
 

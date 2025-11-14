@@ -69,16 +69,7 @@ export function StorageChoiceScreen({ onNext, onChoose, extensionParams }) {
 
       if (isExtensionFlow) {
         // Extension-initiated flow - send Google OAuth ID token to extension
-        //
-        // TOKEN FLOW EXPLANATION:
-        // 1. User signs in via Google OAuth popup (signInWithGoogle)
-        // 2. Firebase returns a UserCredential with _tokenResponse.oauthIdToken
-        // 3. This oauthIdToken is the Google OAuth ID token (NOT a Firebase ID token)
-        // 4. We send this Google OAuth ID token to the extension
-        // 5. Extension uses GoogleAuthProvider.credential(googleOAuthToken) to create a credential
-        // 6. Extension then uses signInWithCredential() to authenticate with Firebase
-        //
-        // This token is valid for 1 hour from Google's OAuth service
+        // The extension uses this token to authenticate with Firebase
         const googleOAuthIdToken = result._tokenResponse?.oauthIdToken
 
         if (!googleOAuthIdToken) {
@@ -94,7 +85,6 @@ export function StorageChoiceScreen({ onNext, onChoose, extensionParams }) {
           onChoose('google')
           setTimeout(() => onNext(), 1000)
         } catch (extensionError) {
-          console.error('Failed to sync with extension:', extensionError)
           setError(`Extension sync failed: ${extensionError.message}. Continuing to dashboard...`)
           setLoading(false)
 
@@ -110,7 +100,6 @@ export function StorageChoiceScreen({ onNext, onChoose, extensionParams }) {
         setTimeout(() => onNext(), 400)
       }
     } catch (error) {
-      console.error('Sign in failed:', error)
       setError('Sign in failed. Please try again.')
       setSelected(null)
       setLoading(false)
