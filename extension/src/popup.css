@@ -60,11 +60,11 @@
 }
 
 .link-exit {
-  animation: crossfade-out 0.15s ease-out;
+  animation: crossfade-out 0.15s ease-out forwards;
 }
 
 .link-enter {
-  animation: crossfade-in 0.15s ease-out;
+  animation: crossfade-in 0.15s ease-out forwards;
 }
 
 /* GPU acceleration hints for smooth animations */

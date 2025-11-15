@@ -1,7 +1,7 @@
 // Firebase configuration for extension
 // Uses firebase/auth/web-extension for Manifest V3 service worker compatibility
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithCredential, GoogleAuthProvider } from 'firebase/auth/web-extension';
+import { initializeAuth, indexedDBLocalPersistence, signInWithCredential, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth/web-extension';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -16,15 +16,19 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize services - using web-extension auth for service worker
-export const auth = getAuth(app);
+// Initialize auth with IndexedDB persistence for service worker compatibility
+// This enables automatic token refresh and persistent auth state
+export const auth = initializeAuth(app, {
+  persistence: indexedDBLocalPersistence
+});
+
 export const db = getFirestore(app);
 
 /**
  * Sign in to Firebase Auth using the Google OAuth ID token from website.
  * The website performs OAuth, sends the token via postMessage, and this function
  * retrieves it from chrome.storage.local to authenticate with Firebase.
- * This enables Firestore security rules to work properly.
+ * Firebase will automatically persist the session and handle token refresh.
  */
 export async function signInWithStoredToken() {
   try {
@@ -34,28 +38,38 @@ export async function signInWithStoredToken() {
     }
 
     // Get stored Google OAuth ID token from website auth
-    const result = await chrome.storage.local.get(['authToken', 'user']);
+    const result = await chrome.storage.local.get(['authToken']);
 
-    if (!result.authToken || !result.user) {
+    if (!result.authToken) {
       return null;
     }
 
     // Create Google credential from Google OAuth ID token and sign in
-    // Firebase will throw an error if the token is expired, which we catch below
+    // Firebase will persist the session to IndexedDB and handle token refresh automatically
     const credential = GoogleAuthProvider.credential(result.authToken);
     const userCredential = await signInWithCredential(auth, credential);
 
     return userCredential.user;
   } catch (error) {
-    // Handle expired or invalid tokens - Firebase will tell us if token is bad
+    // If sign-in fails, clear stored token
+    // Firebase persistence will handle the session after successful sign-in
     if (error.code === 'auth/invalid-credential' ||
         error.code === 'auth/user-token-expired' ||
         error.code === 'auth/invalid-id-token') {
       await chrome.storage.local.remove(['user', 'authToken']);
     }
 
-    throw error; // Re-throw so caller can handle
+    throw error;
   }
+}
+
+/**
+ * Set up auth state listener.
+ * Firebase automatically refreshes tokens and persists auth state.
+ * Call this once when the service worker starts.
+ */
+export function setupAuthListener(callback) {
+  return onAuthStateChanged(auth, callback);
 }
 
 export default app;

@@ -39,65 +39,43 @@
     </div>
 
     <!-- Queue Count - Stats Line -->
-    <div id="queueCount" class="flex items-center justify-center gap-2.5 text-center text-sm text-neutral-500 px-4 py-3 uppercase tracking-wide shrink-0">
+    <div id="queueCount" class="hidden flex items-center justify-center gap-2.5 text-center text-sm text-neutral-500 px-4 py-3 uppercase tracking-wide shrink-0">
       <div id="statsRemaining">Loading...</div>
       <div class="text-neutral-600">•</div>
       <div id="statsTime"></div>
     </div>
 
-    <!-- Skeleton Loading State -->
-    <div id="skeletonLoading" class="hidden flex items-center justify-center gap-2.5 text-center text-sm text-neutral-600 px-4 py-3 uppercase tracking-wide shrink-0">
-      <div class="skeleton-pulse">Loading...</div>
-    </div>
-
     <!-- Link Card -->
     <div
       id="linkCard"
-      class="bg-neutral-800 border-t border-b border-[#1a1a1a] px-4 py-4 min-h-[100px] shrink-0 flex flex-col justify-center"
+      class="hidden bg-neutral-800 border-t border-b border-[#1a1a1a] px-4 py-4 min-h-[100px] shrink-0 flex flex-col justify-center"
     >
       <h3 id="linkTitle" class="font-semibold text-base mb-2 break-words leading-snug line-clamp-3">
         No links yet!
       </h3>
       <div class="flex items-center gap-2">
-        <img id="linkFavicon" src="" alt="" class="w-4 h-4 hidden">
+        <img id="linkFavicon" src="" alt="" class="w-4 h-4 invisible">
         <div id="linkUrl" class="text-xs text-neutral-500 whitespace-nowrap overflow-hidden text-ellipsis"></div>
       </div>
-    </div>
-
-    <!-- Skeleton Link Card -->
-    <div
-      id="skeletonCard"
-      class="hidden bg-neutral-800 border-t border-b border-[#1a1a1a] px-4 py-4 shrink-0 flex-col justify-center"
-    >
-      <div class="skeleton-pulse h-5 w-3/4 mb-2 rounded"></div>
-      <div class="skeleton-pulse h-3 w-1/2 rounded"></div>
-    </div>
-
-    <!-- Empty State -->
-    <div
-      id="emptyState"
-      class="hidden text-center text-neutral-500 px-4 py-4 text-sm bg-neutral-800 border-t border-b border-[#1a1a1a] flex items-center justify-center shrink-0"
-    >
-      Your queue is empty. Save a link below!
     </div>
 
     <!-- Action Buttons -->
     <div class="flex gap-2 px-4 py-3 shrink-0">
       <button
         id="openBtn"
-        class="flex-1 px-4 py-2.5 bg-white text-black border border-transparent rounded-lg text-sm font-medium hover:bg-neutral-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        class="flex-1 px-4 py-2.5 bg-white text-black border border-transparent rounded-lg text-sm font-medium hover:bg-neutral-100 transition-colors disabled:opacity-40 disabled:pointer-events-none"
       >
         Open
       </button>
       <button
         id="skipBtn"
-        class="flex-1 px-4 py-2.5 bg-neutral-800 text-white border border-[#1a1a1a] rounded-lg text-sm font-medium hover:bg-neutral-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        class="flex-1 px-4 py-2.5 bg-neutral-800 text-white border border-[#1a1a1a] rounded-lg text-sm font-medium hover:bg-neutral-700 transition-colors disabled:opacity-40 disabled:pointer-events-none"
       >
         Skip
       </button>
       <button
         id="deleteBtn"
-        class="flex-1 px-4 py-2.5 bg-neutral-800 text-red-400 border border-[#1a1a1a] rounded-lg text-sm font-medium hover:bg-red-600 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        class="flex-1 px-4 py-2.5 bg-neutral-800 text-red-400 border border-[#1a1a1a] rounded-lg text-sm font-medium hover:bg-red-600 hover:text-white transition-colors disabled:opacity-40 disabled:pointer-events-none"
       >
         Delete
       </button>
@@ -107,7 +85,7 @@
     <div class="px-4 py-3 border-t border-[#1a1a1a] mt-auto shrink-0">
 
       <!-- Signed Out State -->
-      <div id="signedOut">
+      <div id="signedOut" class="hidden">
         <button
           id="signInBtn"
           class="w-full px-4 py-2.5 bg-white text-black border border-transparent rounded-lg text-sm font-medium flex items-center justify-center gap-2 hover:bg-neutral-100 transition-colors"
