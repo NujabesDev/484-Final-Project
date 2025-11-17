@@ -2,7 +2,7 @@ import { ArrowUpDown } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { getTimeAgo, getDomain, truncate } from '@/lib/link-utils'
+import { getTimeAgo, getDomain } from '@/lib/link-utils'
 
 export const columns = [
   {
@@ -44,7 +44,7 @@ export const columns = [
       const title = row.getValue('title')
       const url = row.original.url
       return (
-        <div className="flex flex-col gap-1">
+        <div className="space-y-1">
           <a
             href={url}
             target="_blank"
@@ -52,11 +52,13 @@ export const columns = [
             className="font-medium hover:underline"
             onClick={(e) => e.stopPropagation()}
           >
-            {truncate(title, 60)}
+            {title}
           </a>
-          <Badge variant="secondary" className="text-xs w-fit">
-            {getDomain(url)}
-          </Badge>
+          <div>
+            <Badge variant="secondary" className="text-xs">
+              {getDomain(url)}
+            </Badge>
+          </div>
         </div>
       )
     },
@@ -71,14 +73,13 @@ export const columns = [
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm hover:underline truncate block max-w-sm"
+          className="text-sm text-muted-foreground hover:underline block max-w-md truncate"
           onClick={(e) => e.stopPropagation()}
         >
-          {truncate(url, 60)}
+          {url}
         </a>
       )
     },
-    enableSorting: false,
   },
   {
     accessorKey: 'createdAt',
@@ -88,14 +89,14 @@ export const columns = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Saved
+          Date
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
     },
     cell: ({ row }) => {
       const timestamp = row.getValue('createdAt')
-      return <div className="text-sm">{getTimeAgo(timestamp)}</div>
+      return <div>{getTimeAgo(timestamp)}</div>
     },
   },
 ]

@@ -22,26 +22,25 @@ import { Input } from '@/components/ui/input'
 export function DataTable({ columns, data, onBulkDelete }) {
   const [sorting, setSorting] = useState([])
   const [columnFilters, setColumnFilters] = useState([])
+  const [columnVisibility, setColumnVisibility] = useState({})
   const [rowSelection, setRowSelection] = useState({})
-  const [globalFilter, setGlobalFilter] = useState('')
 
   const table = useReactTable({
     data,
     columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    onGlobalFilterChange: setGlobalFilter,
-    globalFilterFn: 'includesString',
     state: {
       sorting,
       columnFilters,
+      columnVisibility,
       rowSelection,
-      globalFilter,
     },
   })
 
@@ -50,7 +49,6 @@ export function DataTable({ columns, data, onBulkDelete }) {
 
   const handleBulkDelete = () => {
     if (selectedCount === 0) return
-
     const selectedIds = selectedRows.map((row) => row.original.id)
     if (onBulkDelete) {
       onBulkDelete(selectedIds)
@@ -59,31 +57,27 @@ export function DataTable({ columns, data, onBulkDelete }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="w-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 flex-1">
-          <Input
-            placeholder="Search links..."
-            value={globalFilter ?? ''}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="max-w-sm"
-          />
-          {selectedCount > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {selectedCount} selected
-              </span>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleBulkDelete}
-              >
-                Delete
-              </Button>
-            </div>
-          )}
-        </div>
+      <div className="flex items-center py-4">
+        <Input
+          placeholder="Search links..."
+          value={(table.getColumn('title')?.getFilterValue()) ?? ''}
+          onChange={(event) =>
+            table.getColumn('title')?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
+        />
+        {selectedCount > 0 && (
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-sm text-muted-foreground">
+              {selectedCount} selected
+            </span>
+            <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+              Delete
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -116,10 +110,7 @@ export function DataTable({ columns, data, onBulkDelete }) {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -130,7 +121,7 @@ export function DataTable({ columns, data, onBulkDelete }) {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No links saved yet.
+                  No results.
                 </TableCell>
               </TableRow>
             )}
@@ -139,8 +130,14 @@ export function DataTable({ columns, data, onBulkDelete }) {
       </div>
 
       {/* Pagination */}
-      {table.getPageCount() > 1 && (
-        <div className="flex items-center justify-end space-x-2">
+      <div className="flex items-center justify-end space-x-2 py-4">
+        <div className="flex-1 text-sm text-muted-foreground">
+          {table.getFilteredSelectedRowModel().rows.length > 0
+            ? `${table.getFilteredSelectedRowModel().rows.length} of `
+            : null}
+          {table.getFilteredRowModel().rows.length} row(s)
+        </div>
+        <div className="space-x-2">
           <Button
             variant="outline"
             size="sm"
@@ -158,7 +155,7 @@ export function DataTable({ columns, data, onBulkDelete }) {
             Next
           </Button>
         </div>
-      )}
+      </div>
     </div>
   )
 }
