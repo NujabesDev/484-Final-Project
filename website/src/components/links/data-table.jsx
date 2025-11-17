@@ -61,17 +61,17 @@ export function DataTable({ columns, data, onBulkDelete }) {
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 flex-1">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 flex-1">
           <Input
             placeholder="Search links..."
             value={globalFilter ?? ''}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="max-w-sm bg-neutral-900 border-neutral-700 focus:border-neutral-600"
+            className="max-w-sm"
           />
           {selectedCount > 0 && (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-neutral-400">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
                 {selectedCount} selected
               </span>
               <Button
@@ -79,25 +79,22 @@ export function DataTable({ columns, data, onBulkDelete }) {
                 size="sm"
                 onClick={handleBulkDelete}
               >
-                Delete {selectedCount === 1 ? '1 link' : `${selectedCount} links`}
+                Delete
               </Button>
             </div>
           )}
         </div>
-        <div className="text-sm text-neutral-500">
-          {table.getFilteredRowModel().rows.length} total
-        </div>
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 overflow-hidden">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-neutral-800 bg-neutral-900 hover:bg-neutral-900">
+              <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="text-neutral-300">
+                    <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -116,10 +113,9 @@ export function DataTable({ columns, data, onBulkDelete }) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className="border-neutral-800 hover:bg-neutral-800/50 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-4">
+                    <TableCell key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -129,10 +125,10 @@ export function DataTable({ columns, data, onBulkDelete }) {
                 </TableRow>
               ))
             ) : (
-              <TableRow className="hover:bg-transparent">
+              <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-32 text-center text-neutral-500"
+                  className="h-24 text-center"
                 >
                   No links saved yet.
                 </TableCell>
@@ -144,31 +140,23 @@ export function DataTable({ columns, data, onBulkDelete }) {
 
       {/* Pagination */}
       {table.getPageCount() > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-neutral-500">
-            Page {table.getState().pagination.pageIndex + 1} of{' '}
-            {table.getPageCount()}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="bg-neutral-900 border-neutral-700 hover:bg-neutral-800"
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="bg-neutral-900 border-neutral-700 hover:bg-neutral-800"
-            >
-              Next
-            </Button>
-          </div>
+        <div className="flex items-center justify-end space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Next
+          </Button>
         </div>
       )}
     </div>

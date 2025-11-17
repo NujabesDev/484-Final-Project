@@ -1,4 +1,6 @@
+import { ArrowUpDown } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getTimeAgo, getDomain, truncate } from '@/lib/link-utils'
 
@@ -13,7 +15,6 @@ export const columns = [
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
-        className="translate-y-[2px]"
       />
     ),
     cell: ({ row }) => (
@@ -21,7 +22,6 @@ export const columns = [
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
-        className="translate-y-[2px]"
       />
     ),
     enableSorting: false,
@@ -31,36 +31,30 @@ export const columns = [
     accessorKey: 'title',
     header: ({ column }) => {
       return (
-        <button
+        <Button
+          variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="flex items-center gap-2 hover:text-white transition-colors"
         >
           Title
-          {column.getIsSorted() === 'asc' ? (
-            <span className="text-xs">↑</span>
-          ) : column.getIsSorted() === 'desc' ? (
-            <span className="text-xs">↓</span>
-          ) : (
-            <span className="text-xs text-neutral-600">↕</span>
-          )}
-        </button>
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
       )
     },
     cell: ({ row }) => {
       const title = row.getValue('title')
       const url = row.original.url
       return (
-        <div className="flex flex-col gap-1.5 max-w-md">
+        <div className="flex flex-col gap-1">
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium hover:text-blue-400 transition-colors cursor-pointer"
+            className="font-medium hover:underline"
             onClick={(e) => e.stopPropagation()}
           >
             {truncate(title, 60)}
           </a>
-          <Badge variant="outline" className="text-xs w-fit">
+          <Badge variant="secondary" className="text-xs w-fit">
             {getDomain(url)}
           </Badge>
         </div>
@@ -69,23 +63,7 @@ export const columns = [
   },
   {
     accessorKey: 'url',
-    header: ({ column }) => {
-      return (
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="flex items-center gap-2 hover:text-white transition-colors"
-        >
-          URL
-          {column.getIsSorted() === 'asc' ? (
-            <span className="text-xs">↑</span>
-          ) : column.getIsSorted() === 'desc' ? (
-            <span className="text-xs">↓</span>
-          ) : (
-            <span className="text-xs text-neutral-600">↕</span>
-          )}
-        </button>
-      )
-    },
+    header: 'URL',
     cell: ({ row }) => {
       const url = row.getValue('url')
       return (
@@ -93,38 +71,31 @@ export const columns = [
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-neutral-400 hover:text-blue-400 transition-colors underline text-sm max-w-sm truncate block"
+          className="text-sm hover:underline truncate block max-w-sm"
           onClick={(e) => e.stopPropagation()}
         >
           {truncate(url, 60)}
         </a>
       )
     },
+    enableSorting: false,
   },
   {
     accessorKey: 'createdAt',
     header: ({ column }) => {
       return (
-        <button
+        <Button
+          variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="flex items-center gap-2 hover:text-white transition-colors"
         >
           Saved
-          {column.getIsSorted() === 'asc' ? (
-            <span className="text-xs">↑</span>
-          ) : column.getIsSorted() === 'desc' ? (
-            <span className="text-xs">↓</span>
-          ) : (
-            <span className="text-xs text-neutral-600">↕</span>
-          )}
-        </button>
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
       )
     },
     cell: ({ row }) => {
       const timestamp = row.getValue('createdAt')
-      return (
-        <div className="text-neutral-400 text-sm">{getTimeAgo(timestamp)}</div>
-      )
+      return <div className="text-sm">{getTimeAgo(timestamp)}</div>
     },
   },
 ]
