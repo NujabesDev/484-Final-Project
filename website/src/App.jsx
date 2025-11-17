@@ -4,6 +4,7 @@ import { StorageChoiceScreen } from '@/components/StorageChoiceScreen'
 import { DashboardIntroScreen } from '@/components/DashboardIntroScreen'
 import { DashboardScreen } from '@/components/DashboardScreen'
 import { onAuthChange } from '@/lib/auth'
+import { Toaster } from '@/components/ui/sonner'
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState(0)
@@ -67,67 +68,70 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen dot-grid-bg relative">
-      {currentScreen > 0 && currentScreen < 3 && (
-        <button
-          onClick={handleLeftThirdClick}
-          onMouseEnter={() => setIsLeftHovered(true)}
-          onMouseLeave={() => setIsLeftHovered(false)}
-          className="fixed left-0 top-0 h-full w-1/3 z-40 cursor-pointer"
-          aria-label="Go back"
-        />
-      )}
+    <>
+      <div className="min-h-screen dot-grid-bg relative">
+        {currentScreen > 0 && currentScreen < 3 && (
+          <button
+            onClick={handleLeftThirdClick}
+            onMouseEnter={() => setIsLeftHovered(true)}
+            onMouseLeave={() => setIsLeftHovered(false)}
+            className="fixed left-0 top-0 h-full w-1/3 z-40 cursor-pointer"
+            aria-label="Go back"
+          />
+        )}
 
-      {currentScreen < 2 && (
-        <button
-          onClick={handleRightThirdClick}
-          onMouseEnter={() => setIsRightHovered(true)}
-          onMouseLeave={() => setIsRightHovered(false)}
-          className="fixed right-0 top-0 h-full w-1/3 z-40 cursor-pointer"
-          aria-label="Go forward"
-        />
-      )}
+        {currentScreen < 2 && (
+          <button
+            onClick={handleRightThirdClick}
+            onMouseEnter={() => setIsRightHovered(true)}
+            onMouseLeave={() => setIsRightHovered(false)}
+            className="fixed right-0 top-0 h-full w-1/3 z-40 cursor-pointer"
+            aria-label="Go forward"
+          />
+        )}
 
-      {currentScreen > 0 && currentScreen < 3 && (
-        <button
-          onClick={() => setCurrentScreen(currentScreen - 1)}
-          className={`fixed left-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 pointer-events-none ${isLeftHovered ? "text-white scale-110" : "text-neutral-500"
-            }`}
-        >
-          <svg className="h-12 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span className="sr-only">Back</span>
-        </button>
-      )}
+        {currentScreen > 0 && currentScreen < 3 && (
+          <button
+            onClick={() => setCurrentScreen(currentScreen - 1)}
+            className={`fixed left-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 pointer-events-none ${isLeftHovered ? "text-white scale-110" : "text-neutral-500"
+              }`}
+          >
+            <svg className="h-12 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="sr-only">Back</span>
+          </button>
+        )}
 
-      {currentScreen < 2 && (
-        <button
-          onClick={() => setCurrentScreen(currentScreen + 1)}
-          className={`fixed right-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 pointer-events-none ${isRightHovered ? "text-white scale-110" : "text-neutral-500"
-            }`}
-        >
-          <svg className="h-12 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-          <span className="sr-only">Next</span>
-        </button>
-      )}
+        {currentScreen < 2 && (
+          <button
+            onClick={() => setCurrentScreen(currentScreen + 1)}
+            className={`fixed right-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 pointer-events-none ${isRightHovered ? "text-white scale-110" : "text-neutral-500"
+              }`}
+          >
+            <svg className="h-12 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+            <span className="sr-only">Next</span>
+          </button>
+        )}
 
-      {screens[currentScreen]}
+        {screens[currentScreen]}
 
-      {currentScreen < 3 && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex gap-2">
-          {[0, 1, 2].map((index) => (
-            <div
-              key={index}
-              className={`h-1.5 rounded-full transition-all duration-500 ease-out ${index === currentScreen ? "bg-white w-8" : "bg-neutral-700 w-1.5"
-                }`}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+        {currentScreen < 3 && (
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex gap-2">
+            {[0, 1, 2].map((index) => (
+              <div
+                key={index}
+                className={`h-1.5 rounded-full transition-all duration-500 ease-out ${index === currentScreen ? "bg-white w-8" : "bg-neutral-700 w-1.5"
+                  }`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+      <Toaster />
+    </>
   )
 }
 
