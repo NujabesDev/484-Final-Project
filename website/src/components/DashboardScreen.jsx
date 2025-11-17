@@ -41,33 +41,11 @@ export function DashboardScreen({ storageChoice, user }) {
     }
   }
 
-  const handleDelete = async (linkId) => {
-    try {
-      await deleteLinkFromFirestore(user.uid, linkId)
-      setLinks((prev) => prev.filter((link) => link.id !== linkId))
-      toast.success('Link deleted')
-    } catch (error) {
-      console.error('Error deleting link:', error)
-      toast.error('Failed to delete link')
-    }
-  }
-
-  const handleOpenAndRemove = async (linkId) => {
-    try {
-      await deleteLinkFromFirestore(user.uid, linkId)
-      setLinks((prev) => prev.filter((link) => link.id !== linkId))
-      toast.success('Link opened and removed')
-    } catch (error) {
-      console.error('Error removing link:', error)
-      toast.error('Failed to remove link')
-    }
-  }
-
   const handleBulkDelete = async (linkIds) => {
     try {
       await deleteMultipleLinks(user.uid, linkIds)
       setLinks((prev) => prev.filter((link) => !linkIds.includes(link.id)))
-      toast.success(`Deleted ${linkIds.length} link(s)`)
+      toast.success(`Deleted ${linkIds.length} link${linkIds.length === 1 ? '' : 's'}`)
     } catch (error) {
       console.error('Error bulk deleting links:', error)
       toast.error('Failed to delete links')
@@ -123,8 +101,6 @@ export function DashboardScreen({ storageChoice, user }) {
             <DataTable
               columns={columns}
               data={links}
-              onDelete={handleDelete}
-              onOpenAndRemove={handleOpenAndRemove}
               onBulkDelete={handleBulkDelete}
             />
           )}
