@@ -4,11 +4,7 @@ import { loadLinksFromFirestore, saveLinkToFirestore, deleteLinkFromFirestore } 
 // Global state
 let currentLink = null;
 let queue = [];
-let productivityMode = false;
-let currentUser = null;
 let skippedLinks = [];
-let isAnimating = false;
-let isInitialLoad = true;
 
 // Helper functions for stats
 // Format timestamp to "2d ago" style
@@ -53,7 +49,6 @@ const openBtn = document.getElementById('openBtn');
 const skipBtn = document.getElementById('skipBtn');
 const deleteBtn = document.getElementById('deleteBtn');
 const saveCurrentBtn = document.getElementById('saveCurrentBtn');
-const productivityToggle = document.getElementById('productivityToggle');
 
 // Auth elements
 const signedOutDiv = document.getElementById('signedOut');
@@ -69,11 +64,8 @@ const AUTH_URL = 'https://484-final-project-three.vercel.app/';
 async function init() {
   // Load all cached states synchronously for instant UI (no flicker)
   const cached = await loadCacheFromLocal();
-  await loadProductivityMode();
-  await loadAuthState();
 
   // Update UI immediately with cached data
-  updateToggle();
   updateAuthUI();
 
   if (cached.links.length > 0) {
@@ -98,10 +90,9 @@ async function syncInBackground() {
     } catch (error) {
       // Token expired or invalid - clear cache and local storage
       await clearLinkCache();
-      await chrome.storage.local.remove(['user', 'authToken']);
+      await chrome.storage.local.remove(['authToken']);
 
       // Update UI to show signed out state
-      currentUser = null;
       queue = [];
       displayRandomLink();
       updateAuthUI();
@@ -109,13 +100,12 @@ async function syncInBackground() {
     }
   }
 
-  // Load user info from storage for quick UI updates
-  await loadAuthState();
+  // Update auth UI with current Firebase auth state
   updateAuthUI();
 
   // If user is authenticated, sync with Firestore
-  if (currentUser && currentUser.uid) {
-    const freshLinks = await loadLinksFromFirestore(currentUser.uid);
+  if (auth.currentUser && auth.currentUser.uid) {
+    const freshLinks = await loadLinksFromFirestore(auth.currentUser.uid);
 
     // Check if data changed
     if (hasChanged(queue, freshLinks)) {
@@ -134,10 +124,6 @@ async function syncInBackground() {
     queue = [];
     await clearLinkCache();
   }
-
-  // Load productivity mode
-  await loadProductivityMode();
-  updateToggle();
 }
 
 // Check if links have changed
@@ -160,25 +146,13 @@ function hasChanged(oldLinks, newLinks) {
   return false;
 }
 
-// Load auth state from cache for instant UI display
-// Firebase auth verification happens later in syncInBackground()
-async function loadAuthState() {
-  // Load cached user info first for instant display (no Firebase wait)
-  const result = await chrome.storage.local.get(['user']);
-  if (result.user) {
-    currentUser = result.user;
-  } else {
-    currentUser = null;
-  }
-}
-
-// Update auth UI based on current state
+// Update auth UI based on current Firebase auth state
 function updateAuthUI() {
-  if (currentUser) {
+  if (auth.currentUser) {
     // Signed in
     signedOutDiv.classList.add('hidden');
     signedInDiv.classList.remove('hidden');
-    userAvatar.src = currentUser.photoURL || 'https://via.placeholder.com/32';
+    userAvatar.src = auth.currentUser.photoURL || 'https://via.placeholder.com/32';
   } else {
     // Signed out
     signedOutDiv.classList.remove('hidden');
@@ -198,8 +172,9 @@ async function handleSignIn() {
   chrome.tabs.create({ url: authUrl });
 
   // Listen for storage changes to update UI when auth completes
+  // Auth token is stored, then Firebase auth state changes
   chrome.storage.onChanged.addListener(function authListener(changes, namespace) {
-    if (namespace === 'local' && changes.user) {
+    if (namespace === 'local' && changes.authToken) {
       init().then(() => {
         chrome.storage.onChanged.removeListener(authListener);
       });
@@ -215,18 +190,12 @@ function handleDashboard() {
 // Load queue from storage
 async function loadQueue() {
   // Require authentication to load queue
-  if (!currentUser || !currentUser.uid) {
+  if (!auth.currentUser || !auth.currentUser.uid) {
     queue = [];
     return;
   }
 
-  queue = await loadLinksFromFirestore(currentUser.uid);
-}
-
-// Load productivity mode from storage
-async function loadProductivityMode() {
-  const result = await chrome.storage.local.get(['productivityMode']);
-  productivityMode = result.productivityMode ?? false;
+  queue = await loadLinksFromFirestore(auth.currentUser.uid);
 }
 
 // Cache management functions
@@ -260,15 +229,6 @@ async function loadCacheFromLocal() {
 
 async function clearLinkCache() {
   await chrome.storage.local.remove(['cachedQueue', 'cacheTimestamp']);
-}
-
-// Update toggle UI
-function updateToggle() {
-  if (productivityMode) {
-    productivityToggle.classList.add('active');
-  } else {
-    productivityToggle.classList.remove('active');
-  }
 }
 
 // Update button states based on queue size
@@ -313,14 +273,12 @@ function getRandomLink() {
 
 // Display a random link in the UI
 function displayRandomLink() {
-  if (isAnimating && !isInitialLoad) return;
-
   currentLink = getRandomLink();
+  const linkFavicon = document.getElementById('linkFavicon');
 
   if (!currentLink) {
-    // No links in queue - show empty state INSIDE link card
+    // No links in queue - show empty state
     linkCard.classList.remove('hidden');
-    const linkFavicon = document.getElementById('linkFavicon');
     if (linkFavicon) {
       linkFavicon.classList.add('invisible');
     }
@@ -330,110 +288,24 @@ function displayRandomLink() {
     return;
   }
 
-  // FAST PATH: Initial load - no animations, instant render
-  if (isInitialLoad) {
-    renderLinkContent();
-    linkCard.classList.remove('hidden');
-    updateButtonStates();
-    isInitialLoad = false; // Reset flag after first render
-    return;
-  }
-
-  // ANIMATED PATH: User interactions - smooth transitions
-  // Set animation flag to prevent clicks
-  isAnimating = true;
-
-  const linkFavicon = document.getElementById('linkFavicon');
-
-  // Preload favicon FIRST before starting any animation
-  const faviconUrl = getFaviconUrl(currentLink.url);
-  const faviconImg = new Image();
-
-  const startAnimation = () => {
-    // Step 1: Hide old favicon and fade out old content
-    if (linkFavicon) {
-      linkFavicon.classList.add('invisible');
-    }
-    linkTitle.classList.add('link-exit');
-    linkUrl.classList.add('link-exit');
-
-    // Step 2: After exit animation completes (150ms), update content
-    setTimeout(() => {
-      // Update text content
-      linkTitle.textContent = currentLink.title;
-      linkUrl.textContent = simplifyUrl(currentLink.url);
-
-      // Update favicon (already preloaded!)
-      if (faviconUrl && linkFavicon) {
-        linkFavicon.src = faviconImg.src;
-        linkFavicon.classList.remove('invisible');
-      } else if (linkFavicon) {
-        linkFavicon.classList.add('invisible');
-      }
-
-      // Ensure link card is visible
-      linkCard.classList.remove('hidden');
-
-      // Step 3: Fade in new content (text + favicon together)
-      linkTitle.classList.remove('link-exit');
-      linkUrl.classList.remove('link-exit');
-      linkTitle.classList.add('link-enter');
-      linkUrl.classList.add('link-enter');
-      if (faviconUrl && linkFavicon) {
-        linkFavicon.classList.add('link-enter');
-      }
-
-      // Step 4: Clean up animation classes after enter completes (150ms)
-      setTimeout(() => {
-        linkTitle.classList.remove('link-enter');
-        linkUrl.classList.remove('link-enter');
-        if (linkFavicon) {
-          linkFavicon.classList.remove('link-enter');
-        }
-
-        // Update button states based on current queue size
-        updateButtonStates();
-
-        // Clear animation flag
-        isAnimating = false;
-      }, 150);
-    }, 150);
-  };
-
-  // Preload favicon before starting animation (prevents async race conditions)
-  if (faviconUrl) {
-    faviconImg.src = faviconUrl;
-    faviconImg.onload = startAnimation;
-    faviconImg.onerror = startAnimation; // Start anyway if favicon fails
-  } else {
-    // No favicon - start animation immediately
-    startAnimation();
-  }
-}
-
-// Helper function to render link content (used by initial load path only)
-function renderLinkContent() {
-  const linkFavicon = document.getElementById('linkFavicon');
-
-  // Update text content
+  // Update content - CSS handles transitions
   linkTitle.textContent = currentLink.title;
   linkUrl.textContent = simplifyUrl(currentLink.url);
 
-  // Update favicon with preloading
+  // Update favicon
   const faviconUrl = getFaviconUrl(currentLink.url);
   if (faviconUrl && linkFavicon) {
-    const img = new Image();
-    img.src = faviconUrl;
-    img.onload = () => {
-      linkFavicon.src = faviconUrl;
-      linkFavicon.classList.remove('invisible');
-    };
-    img.onerror = () => {
-      linkFavicon.classList.add('invisible');
-    };
+    linkFavicon.src = faviconUrl;
+    linkFavicon.classList.remove('invisible');
   } else if (linkFavicon) {
     linkFavicon.classList.add('invisible');
   }
+
+  // Ensure link card is visible
+  linkCard.classList.remove('hidden');
+
+  // Update button states
+  updateButtonStates();
 }
 
 // Update queue count display with stats
@@ -462,13 +334,13 @@ function updateQueueCount() {
 // Save a new link to the queue
 async function saveLink(url, title) {
   // Require authentication
-  if (!currentUser || !currentUser.uid) {
+  if (!auth.currentUser || !auth.currentUser.uid) {
     return;
   }
 
   try {
     // Save to Firestore (checks for duplicates internally)
-    const newLink = await saveLinkToFirestore(currentUser.uid, url, title);
+    const newLink = await saveLinkToFirestore(auth.currentUser.uid, url, title);
 
     // Add to local queue array for immediate UI update
     queue.push(newLink);
@@ -486,13 +358,13 @@ async function saveLink(url, title) {
 // Delete a link from the queue
 async function deleteLink(id) {
   // Require authentication
-  if (!currentUser || !currentUser.uid) {
+  if (!auth.currentUser || !auth.currentUser.uid) {
     return;
   }
 
   try {
     // Delete from Firestore
-    await deleteLinkFromFirestore(currentUser.uid, id);
+    await deleteLinkFromFirestore(auth.currentUser.uid, id);
 
     // Remove from local queue array for immediate UI update
     queue = queue.filter(link => link.id !== id);
@@ -520,7 +392,7 @@ async function openAndRemove(id) {
 
 // Button event listeners
 openBtn.addEventListener('click', async () => {
-  if (currentLink && !isAnimating) {
+  if (currentLink) {
     await openAndRemove(currentLink.id);
     displayRandomLink();
     updateQueueCount();
@@ -528,8 +400,6 @@ openBtn.addEventListener('click', async () => {
 });
 
 skipBtn.addEventListener('click', () => {
-  if (isAnimating) return;
-
   // Do nothing if only 1 link in queue
   if (queue.length <= 1) return;
 
@@ -542,7 +412,7 @@ skipBtn.addEventListener('click', () => {
 });
 
 deleteBtn.addEventListener('click', async () => {
-  if (currentLink && !isAnimating) {
+  if (currentLink) {
     await deleteLink(currentLink.id);
     displayRandomLink();
     updateQueueCount();
@@ -554,13 +424,6 @@ saveCurrentBtn.addEventListener('click', async () => {
   if (tab) {
     await saveLink(tab.url, tab.title);
   }
-});
-
-// Productivity mode toggle
-productivityToggle.addEventListener('click', async () => {
-  productivityMode = !productivityMode;
-  await chrome.storage.local.set({ productivityMode });
-  updateToggle();
 });
 
 // Auth button listeners

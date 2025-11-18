@@ -40,40 +40,11 @@
   animation: fade-in-up 0.5s ease-out;
 }
 
-/* Link change animations - smooth crossfade */
-@keyframes crossfade-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes crossfade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.link-exit {
-  animation: crossfade-out 0.15s ease-out forwards;
-}
-
-.link-enter {
-  animation: crossfade-in 0.15s ease-out forwards;
-}
-
-/* GPU acceleration hints for smooth animations */
+/* Smooth transitions for link content changes */
 #linkTitle,
 #linkUrl,
 #linkFavicon {
-  will-change: opacity;
-  backface-visibility: hidden;
-  transform: translateZ(0);
+  transition: opacity 200ms ease-out;
 }
 
 /* Standard button animations */
@@ -92,19 +63,4 @@ button:not(:disabled):active {
 
 button:disabled {
   cursor: not-allowed;
-}
-
-/* Skeleton loading animation */
-@keyframes skeleton-pulse {
-  0%, 100% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.2;
-  }
-}
-
-.skeleton-pulse {
-  background: #1a1a1a;
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
 }

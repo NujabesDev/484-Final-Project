@@ -56,7 +56,7 @@ export async function signInWithStoredToken() {
     if (error.code === 'auth/invalid-credential' ||
         error.code === 'auth/user-token-expired' ||
         error.code === 'auth/invalid-id-token') {
-      await chrome.storage.local.remove(['user', 'authToken']);
+      await chrome.storage.local.remove(['authToken']);
     }
 
     throw error;
