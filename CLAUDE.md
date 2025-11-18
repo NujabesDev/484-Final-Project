@@ -28,13 +28,13 @@ Browser extension + web dashboard for saving links and retrieving them randomly.
 ## Key Files & Their Purposes
 
 ### Extension (`/extension/src/`)
-- `background.js` - Service worker: handles auth state, saves links to Firestore
+- `background.js` - Service worker: Firebase initialization, auth handling, message listener
 - `popup.js` - Extension popup UI: loads/saves/deletes links from Firestore
-- `content.js` - Injected into Reddit/YouTube: intercepts clicks when productivity mode enabled
 - `auth-bridge.js` - Content script for auth communication with website
-- `firebase-config.js` - Firebase configuration and helpers
+- `services/firestore.js` - Firestore CRUD operations for links
 - `manifest.json` - Extension manifest (Manifest V3)
 - `popup.html` - Popup UI structure
+- `popup.css` - Tailwind-based styles
 
 ### Website (`/website/src/`)
 - `App.jsx` - Main app component with routing
@@ -68,9 +68,11 @@ Browser extension + web dashboard for saving links and retrieving them randomly.
 4. Website sends auth token via postMessage (to window.location.origin, not wildcard)
 5. auth-bridge.js (content script) receives message, validates origin
 6. auth-bridge forwards to background.js via chrome.runtime.sendMessage
-7. background.js stores auth state in chrome.storage.local
-8. Extension popup detects auth change, loads queue from Firestore
-9. Extension popup now shows authenticated UI with user's saved links
+7. background.js signs into Firebase with token (Firebase persists session to IndexedDB)
+8. When popup reopens, Firebase Auth automatically restores session from IndexedDB
+9. Extension popup shows authenticated UI with user's saved links from Firestore
+
+**Key:** Firebase Auth handles all token persistence and refresh automatically via IndexedDB. No manual token storage needed.
 
 ## Firebase Configuration
 
@@ -85,19 +87,24 @@ Browser extension + web dashboard for saving links and retrieving them randomly.
 
 #### Firestore Collections (Primary Data Storage)
 - `users/{userId}/links` - All saved links (used by extension and website)
-  - Document fields: `url`, `title`, `timestamp`, `createdAt`
+  - Document fields: `url`, `title`, `createdAt`
   - Extension reads/writes directly to Firestore
   - Website will read from this collection (not yet implemented)
 
-#### chrome.storage.local (Auth Data Only)
-- `user` - User object (uid, email, displayName, photoURL)
-- `authToken` - Firebase ID token
-- `authTimestamp` - When auth was completed
-- `productivityMode` - Boolean toggle for auto-intercept feature
+#### chrome.storage.local (Cache Only)
+- `cachedQueue` - Cached copy of links array for instant popup UI
+- `cacheTimestamp` - When the cache was last updated
 
-**Note:** Links/queue are NOT stored in chrome.storage.local - everything is in Firestore
+**Note:**
+- Links are stored in Firestore (single source of truth)
+- Auth is handled by Firebase Auth with IndexedDB persistence (no manual token storage)
+- Cache is disposable and re-synced from Firestore on popup open
 
 ## Build & Development
+
+### Prerequisites
+- Node.js v18 or higher
+- npm
 
 ### Extension
 ```bash
@@ -107,10 +114,31 @@ npm run build        # Builds src files to /dist/ (background.js, popup.js, cont
 npm run copy-files   # Copies manifest.json and popup.html to /dist/
 ```
 
+**Development mode** (auto-rebuild on file changes):
+```bash
+npm run dev
+```
+
 **What gets built:**
 - Vite bundles all `/src/*.js` files into `/dist/*.js` with Firebase dependencies
 - manifest.json and popup.html copied as-is
 - Final `/dist/` folder is what you load into the browser
+
+### Extension File Structure
+```
+extension/
+├── src/
+│   ├── background.js          # Service worker (handles messages, Firebase ops)
+│   ├── popup.js               # Extension popup UI logic
+│   ├── auth-bridge.js         # Auth communication with website
+│   └── services/firestore.js  # Firestore CRUD operations for links
+├── dist/                      # Built extension (load this in browser)
+├── manifest.json              # Extension configuration
+├── popup.html                 # Popup UI
+├── popup.css                  # Tailwind-based styles
+├── package.json               # Dependencies
+└── vite.config.js             # Build configuration
+```
 
 ### Website
 ```bash
@@ -139,8 +167,17 @@ npm run build        # Builds for production
 
 ### Testing Extension Locally
 1. Build extension: `cd extension && npm run build && npm run copy-files`
-2. Chrome: Load unpacked from `extension/dist/`
-3. Firefox: Load temporary from `extension/dist/`
+
+2. **Chrome:**
+   - Navigate to `chrome://extensions/`
+   - Enable "Developer mode" toggle (top right)
+   - Click "Load unpacked"
+   - Select the `extension/dist/` folder
+
+3. **Firefox:**
+   - Navigate to `about:debugging#/runtime/this-firefox`
+   - Click "Load Temporary Add-on"
+   - Select `extension/dist/manifest.json`
 
 ### Deploying Website
 - Vercel auto-deploys from main branch
@@ -159,7 +196,6 @@ npm run build        # Builds for production
 {
   url: string,         // The saved URL
   title: string,       // Page title or URL if no title
-  timestamp: number,   // Date.now() when saved
   createdAt: number    // Date.now() when created
 }
 ```

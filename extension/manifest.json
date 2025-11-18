@@ -1,9 +1,10 @@
 {
+  "_comment": "IMPORTANT: content_scripts.matches for auth-bridge must stay in sync with src/config.js ALLOWED_ORIGINS",
   "manifest_version": 3,
   "name": "Read Later Random",
   "version": "1.0.0",
   "description": "Save links and view them randomly one at a time",
-  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "permissions": ["storage", "activeTab", "tabs"],
   "action": {
     "default_popup": "popup.html",
     "default_title": "Read Later Random"

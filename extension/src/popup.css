@@ -2,42 +2,22 @@
 
 /* Extension popup styles with Tailwind */
 
-/* Dark theme similar to website */
-@theme {
-  --color-bg: #000;
-  --color-fg: #fff;
-  --color-card: #0a0a0a;
-  --color-muted: #171717;
-  --color-muted-fg: #a3a3a3;
-  --color-border: #1a1a1a;
-  --radius-base: 8px;
+/* Button base styles */
+.btn {
+  @apply w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors;
+  @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none;
 }
 
-/* Productivity toggle active state */
-#productivityToggle.active {
-  background: #fff;
+.btn-primary {
+  @apply bg-white text-black border border-transparent hover:bg-neutral-100;
 }
 
-#productivityToggle.active>div {
-  left: 25px;
-  background: #000;
+.btn-secondary {
+  @apply bg-neutral-800 text-white border border-[#1a1a1a] hover:bg-neutral-700;
 }
 
-/* Custom animations */
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in-up {
-  animation: fade-in-up 0.5s ease-out;
+.btn-danger {
+  @apply bg-neutral-800 text-red-400 border border-[#1a1a1a] hover:bg-red-600 hover:text-white;
 }
 
 /* Smooth transitions for link content changes */
@@ -47,18 +27,17 @@
   transition: opacity 200ms ease-out;
 }
 
-/* Standard button animations */
+/* Simplified button animations */
 button {
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
 button:not(:disabled):hover {
-  transform: scale(1.05);
   opacity: 0.9;
 }
 
 button:not(:disabled):active {
-  transform: scale(0.95);
+  opacity: 0.7;
 }
 
 button:disabled {

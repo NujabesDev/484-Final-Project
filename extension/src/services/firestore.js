@@ -1,5 +1,16 @@
-import { db } from '../firebase-config.js';
+import { db } from '../background.js';
 import { collection, getDocs, addDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+
+/**
+ * Guard function to ensure user is authenticated
+ * @param {string} userId - The user's UID
+ * @throws {Error} If userId is not provided
+ */
+function ensureAuthenticated(userId) {
+  if (!userId) {
+    throw new Error('User not authenticated');
+  }
+}
 
 /**
  * Load all links from Firestore for a specific user
@@ -7,29 +18,13 @@ import { collection, getDocs, addDoc, deleteDoc, doc, query, where } from 'fireb
  * @returns {Promise<Array>} Array of link objects with {id, url, title, timestamp}
  */
 export async function loadLinksFromFirestore(userId) {
-  if (!userId) {
-    return [];
-  }
+  ensureAuthenticated(userId);
 
-  try {
-    // Load all links from Firestore for the current user
-    const linksRef = collection(db, 'users', userId, 'links');
-    const querySnapshot = await getDocs(linksRef);
+  // Load all links from Firestore for the current user
+  const linksRef = collection(db, 'users', userId, 'links');
+  const querySnapshot = await getDocs(linksRef);
 
-    const links = [];
-    querySnapshot.forEach((doc) => {
-      links.push({
-        id: doc.id,
-        url: doc.data().url,
-        title: doc.data().title,
-        timestamp: doc.data().createdAt
-      });
-    });
-
-    return links;
-  } catch (error) {
-    return [];
-  }
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
 /**
@@ -37,13 +32,11 @@ export async function loadLinksFromFirestore(userId) {
  * @param {string} userId - The user's UID
  * @param {string} url - The URL to save
  * @param {string} title - The title of the page
- * @returns {Promise<Object>} The saved link object with {id, url, title, timestamp}
+ * @returns {Promise<Object>} The saved link object with {id, url, title, createdAt}
  * @throws {Error} If duplicate or save fails
  */
 export async function saveLinkToFirestore(userId, url, title) {
-  if (!userId) {
-    throw new Error('User not authenticated');
-  }
+  ensureAuthenticated(userId);
 
   // Check for duplicates in Firestore
   const linksRef = collection(db, 'users', userId, 'links');
@@ -51,29 +44,23 @@ export async function saveLinkToFirestore(userId, url, title) {
   const querySnapshot = await getDocs(q);
 
   if (!querySnapshot.empty) {
-    // Duplicate logic check
-    const existingDoc = querySnapshot.docs[0];
-    return {
-      id: existingDoc.id,
-      url: existingDoc.data().url,
-      title: existingDoc.data().title,
-      timestamp: existingDoc.data().createdAt
-    };
+    throw new Error('Link already exists');
   }
 
-  // Save to Firestore
-  const docRef = await addDoc(collection(db, 'users', userId, 'links'), {
+  // Save to Firestore with single timestamp
+  const timestamp = Date.now();
+  const linkData = {
     url: url,
     title: title || url,
-    createdAt: Date.now()
-  });
+    createdAt: timestamp
+  };
+
+  const docRef = await addDoc(linksRef, linkData);
 
   // Return the new link object
   return {
     id: docRef.id,
-    url: url,
-    title: title || url,
-    timestamp: Date.now()
+    ...linkData
   };
 }
 
@@ -85,9 +72,7 @@ export async function saveLinkToFirestore(userId, url, title) {
  * @throws {Error} If delete fails
  */
 export async function deleteLinkFromFirestore(userId, linkId) {
-  if (!userId) {
-    throw new Error('User not authenticated');
-  }
+  ensureAuthenticated(userId);
 
   await deleteDoc(doc(db, 'users', userId, 'links', linkId));
 }

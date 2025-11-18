@@ -1,16 +1,11 @@
 // Content script that bridges website <-> extension communication
 // Runs on the auth website and relays messages via postMessage
+import { ALLOWED_ORIGINS } from './config.js';
 
 // Listen for messages from the webpage
 window.addEventListener('message', async (event) => {
   // Verify the message is from our website
-  const allowedOrigins = [
-    'https://484-final-project-three.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:3000'
-  ];
-
-  if (!allowedOrigins.includes(event.origin)) {
+  if (!ALLOWED_ORIGINS.includes(event.origin)) {
     return;
   }
 
@@ -18,12 +13,9 @@ window.addEventListener('message', async (event) => {
   if (event.data && event.data.type === 'AUTH_TO_EXTENSION') {
 
     try {
-      // Forward to background script using browser.runtime (works in Firefox) or chrome.runtime (works in Chrome)
-      const runtime = typeof browser !== 'undefined' ? browser.runtime : chrome.runtime;
-
-      const response = await runtime.sendMessage({
+      // Forward to background script
+      const response = await chrome.runtime.sendMessage({
         action: 'AUTH_SUCCESS',
-        user: event.data.user,
         token: event.data.token
       });
 
