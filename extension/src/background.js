@@ -6,21 +6,11 @@ const WEBSITE_URL = 'https://484-final-project-three.vercel.app/';
 
 // Set up Firebase auth state listener
 // This runs when service worker starts and handles automatic token refresh
+// Firebase Auth persists the session automatically, no need to sync to chrome.storage
 setupAuthListener(async (user) => {
-  if (user) {
-    // User is signed in - Firebase is handling token refresh automatically
-    // Update chrome.storage with current user data for quick access
-    await chrome.storage.local.set({
-      user: {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL
-      }
-    });
-  } else {
+  if (!user) {
     // User is signed out - clear storage and cache
-    await chrome.storage.local.remove(['user', 'authToken', 'cachedQueue', 'cacheTimestamp']);
+    await chrome.storage.local.remove(['authToken', 'cachedQueue', 'cacheTimestamp']);
   }
 });
 
@@ -46,23 +36,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Handle authentication success from website
 async function handleAuthSuccess(message, sender, sendResponse) {
   try {
-    const { user, token } = message;
+    const { token } = message;
 
-    // Store auth data in chrome.storage
-    // The website handles OAuth, and sends the token + user info here
-    await chrome.storage.local.set({
-      user: {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL
-      },
-      authToken: token
-    });
+    // Store only the auth token in chrome.storage
+    // The website handles OAuth and sends the token here
+    await chrome.storage.local.set({ authToken: token });
 
     // Sign in to Firebase Auth with the token
     // Firebase will persist the session and handle token refresh automatically
-    // The onAuthStateChanged listener above will keep chrome.storage in sync
     try {
       await signInWithStoredToken();
     } catch (error) {

@@ -5,7 +5,6 @@ import { loadLinksFromFirestore, saveLinkToFirestore, deleteLinkFromFirestore } 
 let currentLink = null;
 let queue = [];
 let productivityMode = false;
-let currentUser = null;
 let skippedLinks = [];
 let isAnimating = false;
 let isInitialLoad = true;
@@ -70,7 +69,6 @@ async function init() {
   // Load all cached states synchronously for instant UI (no flicker)
   const cached = await loadCacheFromLocal();
   await loadProductivityMode();
-  await loadAuthState();
 
   // Update UI immediately with cached data
   updateToggle();
@@ -98,10 +96,9 @@ async function syncInBackground() {
     } catch (error) {
       // Token expired or invalid - clear cache and local storage
       await clearLinkCache();
-      await chrome.storage.local.remove(['user', 'authToken']);
+      await chrome.storage.local.remove(['authToken']);
 
       // Update UI to show signed out state
-      currentUser = null;
       queue = [];
       displayRandomLink();
       updateAuthUI();
@@ -109,13 +106,12 @@ async function syncInBackground() {
     }
   }
 
-  // Load user info from storage for quick UI updates
-  await loadAuthState();
+  // Update auth UI with current Firebase auth state
   updateAuthUI();
 
   // If user is authenticated, sync with Firestore
-  if (currentUser && currentUser.uid) {
-    const freshLinks = await loadLinksFromFirestore(currentUser.uid);
+  if (auth.currentUser && auth.currentUser.uid) {
+    const freshLinks = await loadLinksFromFirestore(auth.currentUser.uid);
 
     // Check if data changed
     if (hasChanged(queue, freshLinks)) {
@@ -160,25 +156,13 @@ function hasChanged(oldLinks, newLinks) {
   return false;
 }
 
-// Load auth state from cache for instant UI display
-// Firebase auth verification happens later in syncInBackground()
-async function loadAuthState() {
-  // Load cached user info first for instant display (no Firebase wait)
-  const result = await chrome.storage.local.get(['user']);
-  if (result.user) {
-    currentUser = result.user;
-  } else {
-    currentUser = null;
-  }
-}
-
-// Update auth UI based on current state
+// Update auth UI based on current Firebase auth state
 function updateAuthUI() {
-  if (currentUser) {
+  if (auth.currentUser) {
     // Signed in
     signedOutDiv.classList.add('hidden');
     signedInDiv.classList.remove('hidden');
-    userAvatar.src = currentUser.photoURL || 'https://via.placeholder.com/32';
+    userAvatar.src = auth.currentUser.photoURL || 'https://via.placeholder.com/32';
   } else {
     // Signed out
     signedOutDiv.classList.remove('hidden');
@@ -198,8 +182,9 @@ async function handleSignIn() {
   chrome.tabs.create({ url: authUrl });
 
   // Listen for storage changes to update UI when auth completes
+  // Auth token is stored, then Firebase auth state changes
   chrome.storage.onChanged.addListener(function authListener(changes, namespace) {
-    if (namespace === 'local' && changes.user) {
+    if (namespace === 'local' && changes.authToken) {
       init().then(() => {
         chrome.storage.onChanged.removeListener(authListener);
       });
@@ -215,12 +200,12 @@ function handleDashboard() {
 // Load queue from storage
 async function loadQueue() {
   // Require authentication to load queue
-  if (!currentUser || !currentUser.uid) {
+  if (!auth.currentUser || !auth.currentUser.uid) {
     queue = [];
     return;
   }
 
-  queue = await loadLinksFromFirestore(currentUser.uid);
+  queue = await loadLinksFromFirestore(auth.currentUser.uid);
 }
 
 // Load productivity mode from storage
@@ -462,13 +447,13 @@ function updateQueueCount() {
 // Save a new link to the queue
 async function saveLink(url, title) {
   // Require authentication
-  if (!currentUser || !currentUser.uid) {
+  if (!auth.currentUser || !auth.currentUser.uid) {
     return;
   }
 
   try {
     // Save to Firestore (checks for duplicates internally)
-    const newLink = await saveLinkToFirestore(currentUser.uid, url, title);
+    const newLink = await saveLinkToFirestore(auth.currentUser.uid, url, title);
 
     // Add to local queue array for immediate UI update
     queue.push(newLink);
@@ -486,13 +471,13 @@ async function saveLink(url, title) {
 // Delete a link from the queue
 async function deleteLink(id) {
   // Require authentication
-  if (!currentUser || !currentUser.uid) {
+  if (!auth.currentUser || !auth.currentUser.uid) {
     return;
   }
 
   try {
     // Delete from Firestore
-    await deleteLinkFromFirestore(currentUser.uid, id);
+    await deleteLinkFromFirestore(auth.currentUser.uid, id);
 
     // Remove from local queue array for immediate UI update
     queue = queue.filter(link => link.id !== id);
