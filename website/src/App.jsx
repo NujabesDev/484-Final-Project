@@ -3,7 +3,8 @@ import { WelcomeScreen } from '@/components/WelcomeScreen'
 import { StorageChoiceScreen } from '@/components/StorageChoiceScreen'
 import { DashboardIntroScreen } from '@/components/DashboardIntroScreen'
 import { DashboardScreen } from '@/components/DashboardScreen'
-import { onAuthChange } from '@/lib/auth'
+import { onAuthChange, signOut } from '@/lib/auth'
+import { auth } from '@/lib/firebase-config'
 import { Toaster } from '@/components/ui/sonner'
 
 function App() {
@@ -21,8 +22,12 @@ function App() {
       setUser(currentUser)
       setAuthChecked(true)
 
-      // If user is already authenticated, go straight to dashboard
-      if (currentUser) {
+      // Check if this is a reauth flow from extension
+      const urlParams = new URLSearchParams(window.location.search)
+      const isReauth = urlParams.get('reauth') === 'true'
+
+      // If user is already authenticated AND not a reauth flow, go straight to dashboard
+      if (currentUser && !isReauth) {
         setStorageChoice('google')
         setCurrentScreen(3)
       }
@@ -31,15 +36,28 @@ function App() {
     return () => unsubscribe()
   }, [])
 
-  // Detect if this is an extension-initiated auth flow
+  // Detect if this is an extension-initiated auth flow or reauth flow
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const source = urlParams.get('source')
     const extensionId = urlParams.get('extensionId')
+    const reauth = urlParams.get('reauth')
 
     if (source === 'extension' && extensionId) {
-      // Extension-initiated flow - just store the params, start from welcome screen
+      // Extension-initiated flow - store the params
       setExtensionParams({ extensionId })
+
+      // Check if this is a reauth flow (user needs to log in again)
+      if (reauth === 'true') {
+        // Sign out if already logged in, then go to login screen
+        if (auth.currentUser) {
+          signOut().then(() => {
+            setCurrentScreen(2) // Go directly to login screen
+          })
+        } else {
+          setCurrentScreen(2) // Go directly to login screen
+        }
+      }
     }
   }, [])
 

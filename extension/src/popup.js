@@ -49,6 +49,10 @@ function getFaviconUrl(url) {
 }
 
 // DOM elements
+const mainContainer = document.getElementById('mainContainer');
+const authSection = document.getElementById('authSection');
+const mainHeader = document.getElementById('mainHeader');
+const saveSection = document.getElementById('saveSection');
 const linkCard = document.getElementById('linkCard');
 const linkTitle = document.getElementById('linkTitle');
 const linkUrl = document.getElementById('linkUrl');
@@ -154,14 +158,33 @@ function hasChanged(oldLinks, newLinks) {
 // Update auth UI based on current Firebase auth state
 function updateAuthUI() {
   if (auth.currentUser) {
-    // Signed in
+    // Signed in - show auth buttons and main UI elements
     signedOutDiv.classList.add('hidden');
     signedInDiv.classList.remove('hidden');
     userAvatar.src = auth.currentUser.photoURL || 'https://via.placeholder.com/32';
+
+    // Show main UI elements (link card and action buttons visibility handled by displayRandomLink)
+    mainHeader?.classList.remove('hidden');
+    saveSection?.classList.remove('hidden');
+
+    // Remove centering and add back normal layout
+    mainContainer?.classList.remove('justify-center', 'items-center');
+    authSection?.classList.add('border-t', 'border-[#1a1a1a]', 'mt-auto');
   } else {
-    // Signed out
+    // Signed out - hide everything except sign-in button
     signedOutDiv.classList.remove('hidden');
     signedInDiv.classList.add('hidden');
+
+    // Hide ALL main UI elements when not authenticated
+    mainHeader?.classList.add('hidden');
+    saveSection?.classList.add('hidden');
+    actionButtons.classList.add('hidden');
+    linkCard.classList.add('hidden');
+    queueCount.classList.add('hidden');
+
+    // Center the sign-in button
+    mainContainer?.classList.add('justify-center', 'items-center');
+    authSection?.classList.remove('border-t', 'border-[#1a1a1a]', 'mt-auto');
   }
 }
 
@@ -217,6 +240,11 @@ function getRandomLink() {
 
 // Display a random link in the UI
 function displayRandomLink() {
+  // Don't show any links if user is not authenticated
+  if (!auth.currentUser) {
+    return;
+  }
+
   currentLink = getRandomLink();
 
   if (!currentLink) {

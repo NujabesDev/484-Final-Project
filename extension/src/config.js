@@ -13,5 +13,5 @@ export const ALLOWED_ORIGINS = [
 // Build authentication URL with extension ID
 export function buildAuthUrl() {
   const extensionId = chrome.runtime.id;
-  return `${WEBSITE_URL}?source=extension&extensionId=${extensionId}`;
+  return `${WEBSITE_URL}?source=extension&extensionId=${extensionId}&reauth=true`;
 }
