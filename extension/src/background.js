@@ -18,7 +18,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize auth with IndexedDB persistence for service worker compatibility
+// Initialize Firebase Auth with IndexedDB persistence
 const auth = initializeAuth(app, {
   persistence: indexedDBLocalPersistence
 });
@@ -32,14 +32,14 @@ export { auth, db };
 let realtimeSyncUnsubscribe = null;
 let currentSyncUserId = null;
 
-// Start real-time listener for user's links
+// Start real-time Firestore listener for user's links
 function startRealtimeSync(userId) {
-  // Already listening for this user
+  // Skip if already listening for this user
   if (realtimeSyncUnsubscribe && currentSyncUserId === userId) {
     return;
   }
 
-  // Stop any existing listener before starting a new one
+  // Stop existing listener if present
   if (realtimeSyncUnsubscribe) {
     realtimeSyncUnsubscribe();
     realtimeSyncUnsubscribe = null;
@@ -52,18 +52,17 @@ function startRealtimeSync(userId) {
   realtimeSyncUnsubscribe = onSnapshot(
     linksRef,
     (snapshot) => {
-      // Real-time update received from Firestore!
+      // Map Firestore documents to link objects
       const freshLinks = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
 
-      // Update cache automatically when Firestore changes
+      // Update local cache with latest data
       saveCacheToLocal(freshLinks);
     },
     (error) => {
       console.error('Real-time sync error:', error);
-      // Firestore will automatically retry connection
     }
   );
 
@@ -80,7 +79,7 @@ function stopRealtimeSync() {
   }
 }
 
-// Cache management (NO TIMESTAMP - real-time sync keeps it fresh!)
+// Save links to local cache
 async function saveCacheToLocal(links) {
   await chrome.storage.local.set({ cachedQueue: links });
 }
@@ -97,29 +96,25 @@ async function clearLinkCache() {
 // Listen for Firebase auth state changes
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    // User signed in - start real-time sync
     console.log('User signed in:', user.uid);
     startRealtimeSync(user.uid);
   } else {
-    // User signed out - stop sync and clear cache
     console.log('User signed out');
     stopRealtimeSync();
     await clearLinkCache();
   }
 });
 
-// Service worker restart recovery:
-// Ensure sync restarts if service worker wakes up with existing session
-// onAuthStateChanged fires on registration, but add defensive check
+// Restart sync after service worker restart if user is already authenticated
 setTimeout(() => {
   if (auth.currentUser && !realtimeSyncUnsubscribe) {
     console.log('Service worker restart detected - restarting sync');
     startRealtimeSync(auth.currentUser.uid);
   }
-}, 1000); // Wait 1s for Firebase to restore session from IndexedDB
+}, 1000);
 
 chrome.runtime.onInstalled.addListener((details) => {
-  // Auto-open website on first install (not on updates)
+  // Open website on first install
   if (details.reason === 'install') {
     chrome.tabs.create({ url: buildAuthUrl() });
   }
@@ -127,31 +122,26 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 // Listen for messages from content script and popup
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  // Auth success from content script
   if (message.action === 'AUTH_SUCCESS') {
     handleAuthSuccess(message, sendResponse);
     return true;
   }
 
-  // Get auth state
   if (message.action === 'GET_AUTH_STATE') {
     handleGetAuthState(sendResponse);
     return true;
   }
 
-  // Get links (from cache if available and valid)
   if (message.action === 'GET_LINKS') {
     handleGetLinks(sendResponse);
     return true;
   }
 
-  // Save link
   if (message.action === 'SAVE_LINK') {
     handleSaveLink(message, sendResponse);
     return true;
   }
 
-  // Delete link
   if (message.action === 'DELETE_LINK') {
     handleDeleteLink(message, sendResponse);
     return true;
@@ -160,23 +150,19 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return false;
 });
 
-// Handle authentication success from website
+// Handle authentication token from website
 async function handleAuthSuccess(message, sendResponse) {
   try {
     const { token } = message;
-
-    // Sign in to Firebase Auth with the Google OAuth ID token
-    // Firebase will persist the session to IndexedDB and handle token refresh automatically
     const credential = GoogleAuthProvider.credential(token);
     await signInWithCredential(auth, credential);
-
     sendResponse({ success: true });
   } catch (error) {
     sendResponse({ success: false, error: error.message });
   }
 }
 
-// Get current auth state
+// Return current authentication state
 function handleGetAuthState(sendResponse) {
   const user = auth.currentUser;
   sendResponse({
@@ -191,24 +177,22 @@ function handleGetAuthState(sendResponse) {
   });
 }
 
-// Get links - returns cache (real-time sync keeps it fresh!)
+// Return cached links or fetch from Firestore
 async function handleGetLinks(sendResponse) {
   try {
-    // Check if user is authenticated
     if (!auth.currentUser?.uid) {
       sendResponse({ success: true, links: [] });
       return;
     }
 
-    // Ensure real-time sync is running (in case service worker restarted)
+    // Ensure real-time sync is active
     if (!realtimeSyncUnsubscribe) {
       startRealtimeSync(auth.currentUser.uid);
     }
 
-    // Load cache
     const cached = await loadCacheFromLocal();
 
-    // If cache exists, return it (onSnapshot keeps it fresh!)
+    // Return cache if available
     if (cached.length > 0) {
       sendResponse({
         success: true,
@@ -217,8 +201,7 @@ async function handleGetLinks(sendResponse) {
       return;
     }
 
-    // No cache yet - fetch from Firestore once
-    // (onSnapshot listener will keep it updated from now on)
+    // Fetch from Firestore if no cache exists
     const freshLinks = await loadLinksFromFirestore(db, auth.currentUser.uid);
     await saveCacheToLocal(freshLinks);
 
@@ -235,7 +218,7 @@ async function handleGetLinks(sendResponse) {
   }
 }
 
-// Save link to Firestore (onSnapshot will update cache automatically)
+// Save link to Firestore
 async function handleSaveLink(message, sendResponse) {
   try {
     const { url, title } = message;
@@ -248,11 +231,7 @@ async function handleSaveLink(message, sendResponse) {
       return;
     }
 
-    // Save to Firestore - onSnapshot listener will update cache automatically
     const newLink = await saveLinkToFirestore(db, auth.currentUser.uid, url, title);
-
-    // Note: Cache will be updated automatically by onSnapshot listener
-    // No manual cache update needed - eliminates redundant writes
 
     sendResponse({
       success: true,
@@ -267,7 +246,7 @@ async function handleSaveLink(message, sendResponse) {
   }
 }
 
-// Delete link from Firestore (onSnapshot will update cache automatically)
+// Delete link from Firestore
 async function handleDeleteLink(message, sendResponse) {
   try {
     const { linkId } = message;
@@ -280,11 +259,7 @@ async function handleDeleteLink(message, sendResponse) {
       return;
     }
 
-    // Delete from Firestore - onSnapshot listener will update cache automatically
     await deleteLinkFromFirestore(db, auth.currentUser.uid, linkId);
-
-    // Note: Cache will be updated automatically by onSnapshot listener
-    // No manual cache update needed - eliminates redundant writes
 
     sendResponse({
       success: true

@@ -3,11 +3,10 @@ import { WEBSITE_URL, buildAuthUrl } from './config.js';
 // Global state
 let currentLink = null;
 let queue = [];
-let currentUser = null; // Track auth state locally
-let operationInProgress = false; // Prevent concurrent operations
+let currentUser = null;
+let operationInProgress = false;
 
-// Helper functions for stats
-// Format timestamp to "2d ago" style
+// Format timestamp to relative time (e.g., "2d ago")
 function getTimeAgo(timestamp) {
   const seconds = Math.floor((Date.now() - timestamp) / 1000);
 
@@ -26,7 +25,7 @@ function getTimeAgo(timestamp) {
   return '0m ago';
 }
 
-// Extract clean domain from URL
+// Extract domain from URL without www prefix
 function simplifyUrl(url) {
   try {
     const urlObj = new URL(url);
@@ -36,7 +35,7 @@ function simplifyUrl(url) {
   }
 }
 
-// Get favicon URL from Google service
+// Get favicon URL for domain
 function getFaviconUrl(url) {
   try {
     const domain = new URL(url).hostname;
@@ -46,7 +45,7 @@ function getFaviconUrl(url) {
   }
 }
 
-// Message passing helper functions
+// Send message to background script
 function sendMessage(action, data = {}) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ action, ...data }, (response) => {
@@ -110,38 +109,32 @@ const signInBtn = document.getElementById('signInBtn');
 const dashboardBtn = document.getElementById('dashboardBtn');
 const userAvatar = document.getElementById('userAvatar');
 
-// Initialize popup
+// Initialize popup UI and load data
 async function init() {
   try {
-    // Get auth state from background
     let authState = await getAuthState();
 
-    // If not authenticated, retry once after a short delay
-    // (Firebase auth might still be initializing in background)
+    // Retry once if auth not ready
     if (!authState.authenticated) {
       await new Promise(resolve => setTimeout(resolve, 300));
       authState = await getAuthState();
     }
 
     currentUser = authState.user;
-
     updateAuthUI();
 
     if (!currentUser) {
-      // Not authenticated - clear and return
       queue = [];
       displayRandomLink();
       return;
     }
 
-    // Get links from background (cache is always fresh via real-time sync!)
     const linksResponse = await getLinks();
 
     if (linksResponse.links) {
       queue = linksResponse.links;
     }
 
-    // Always call displayRandomLink to show UI (empty state or link)
     displayRandomLink();
   } catch (error) {
     console.error('Failed to initialize popup:', error);
@@ -149,56 +142,46 @@ async function init() {
   }
 }
 
-// Note: No manual sync needed - real-time listener in background.js
-// automatically updates cache when Firestore changes!
-
-// Update auth UI based on current user state
+// Update UI based on authentication state
 function updateAuthUI() {
   if (currentUser) {
-    // Signed in - show auth buttons and main UI elements
+    // Show authenticated UI
     signedOutDiv.classList.add('hidden');
     signedInDiv.classList.remove('hidden');
     userAvatar.src = currentUser.photoURL || 'https://via.placeholder.com/32';
 
-    // Show main UI elements (link card and action buttons visibility handled by displayRandomLink)
     mainHeader?.classList.remove('hidden');
     saveSection?.classList.remove('hidden');
 
-    // Remove centering and add back normal layout
     mainContainer?.classList.remove('justify-center', 'items-center');
     authSection?.classList.add('border-t', 'border-[#1a1a1a]', 'mt-auto');
   } else {
-    // Signed out - hide everything except sign-in button
+    // Show unauthenticated UI
     signedOutDiv.classList.remove('hidden');
     signedInDiv.classList.add('hidden');
 
-    // Hide ALL main UI elements when not authenticated
     mainHeader?.classList.add('hidden');
     saveSection?.classList.add('hidden');
     actionButtons.classList.add('hidden');
     linkCard.classList.add('hidden');
     queueCount.classList.add('hidden');
 
-    // Center the sign-in button
     mainContainer?.classList.add('justify-center', 'items-center');
     authSection?.classList.remove('border-t', 'border-[#1a1a1a]', 'mt-auto');
   }
 }
 
-// Handle sign in
+// Open authentication page
 async function handleSignIn() {
-  // Open auth page with extension ID as parameter
-  // Firebase Auth will persist session to IndexedDB
-  // When popup reopens, auth.currentUser will be automatically restored
   chrome.tabs.create({ url: buildAuthUrl() });
 }
 
-// Handle dashboard button click
+// Open dashboard in new tab
 function handleDashboard() {
   chrome.tabs.create({ url: WEBSITE_URL });
 }
 
-// Update button states based on queue size
+// Enable or disable action buttons based on queue
 function updateButtonStates() {
   const hasLinks = queue.length > 0;
   openBtn.disabled = !hasLinks;
@@ -214,9 +197,8 @@ function getRandomLink() {
   return queue[randomIndex];
 }
 
-// Display a random link in the UI
+// Display random link or empty state
 function displayRandomLink() {
-  // Don't show any links if user is not authenticated
   if (!currentUser) {
     return;
   }
@@ -224,19 +206,19 @@ function displayRandomLink() {
   currentLink = getRandomLink();
 
   if (!currentLink) {
-    // No links in queue - show empty state with visible but disabled buttons
+    // Show empty state
     linkCard.classList.remove('hidden');
-    actionButtons.classList.remove('hidden'); // Keep buttons visible
+    actionButtons.classList.remove('hidden');
     if (linkFavicon) {
       linkFavicon.classList.add('invisible');
     }
     linkTitle.textContent = 'Your queue is empty';
     linkUrl.textContent = 'Save a link below!';
-    updateButtonStates(); // Buttons will be disabled but visible
+    updateButtonStates();
     return;
   }
 
-  // Update content - CSS handles transitions
+  // Update link content
   linkTitle.textContent = currentLink.title;
   linkUrl.textContent = simplifyUrl(currentLink.url);
 
@@ -250,26 +232,21 @@ function displayRandomLink() {
     linkFavicon.classList.add('invisible');
   }
 
-  // Ensure link card and action buttons are visible
   linkCard.classList.remove('hidden');
   actionButtons.classList.remove('hidden');
 
-  // Update button states and queue count
   updateButtonStates();
   updateQueueCount();
 }
 
-// Show error message to user
+// Display error message temporarily
 function showErrorMessage(message) {
-  // Temporarily show error in link title
   linkTitle.textContent = message;
   linkUrl.textContent = '';
-  linkTitle.style.color = '#ef4444'; // red-500
+  linkTitle.style.color = '#ef4444';
 
-  // Reset after 2 seconds
   setTimeout(() => {
     linkTitle.style.color = '';
-    // Restore original content or show empty state if queue is empty
     if (queue.length === 0) {
       linkTitle.textContent = 'Your queue is empty';
       linkUrl.textContent = 'Save a link below!';
@@ -280,21 +257,18 @@ function showErrorMessage(message) {
   }, 2000);
 }
 
-// Update queue count display with stats
+// Update queue stats display
 function updateQueueCount() {
   if (queue.length === 0) {
-    // Hide stats when queue is empty
     queueCount.classList.add('hidden');
     return;
   }
 
-  // Show stats when there are links
   queueCount.classList.remove('hidden');
 
   const remaining = queue.length;
   statsRemaining.textContent = `${remaining} ${remaining !== 1 ? 'links' : 'link'}`;
 
-  // Update time if we have a current link
   if (currentLink) {
     const timeAgo = getTimeAgo(currentLink.createdAt);
     statsTime.textContent = `${timeAgo}`;
@@ -303,21 +277,17 @@ function updateQueueCount() {
   }
 }
 
-// Save a new link via message to background
+// Save link to Firestore
 async function handleSaveLink(url, title) {
   if (!currentUser) {
     return;
   }
 
   try {
-    // Send save message to background (background handles Firestore + cache)
     const response = await saveLink(url, title);
-
-    // Add to local queue for immediate UI update
     queue.push(response.link);
     displayRandomLink();
   } catch (error) {
-    // Show error message to user
     if (error.message.includes('already exists')) {
       showErrorMessage('Link already saved!');
     } else {
@@ -326,17 +296,14 @@ async function handleSaveLink(url, title) {
   }
 }
 
-// Delete a link via message to background
+// Delete link from Firestore
 async function handleDeleteLink(linkId) {
   if (!currentUser) {
     return;
   }
 
   try {
-    // Send delete message to background (background handles Firestore + cache)
     await deleteLink(linkId);
-
-    // Remove from local queue for immediate UI update
     queue = queue.filter(link => link.id !== linkId);
   } catch (error) {
     showErrorMessage('Failed to delete link');
@@ -352,10 +319,9 @@ async function openAndRemove(linkId) {
   }
 }
 
-// Button event listeners
+// Open button: opens link and removes it
 openBtn.addEventListener('click', async () => {
   if (openBtn.disabled) {
-    // Show empty state message when clicking disabled button
     showErrorMessage('Your queue is empty');
     return;
   }
@@ -372,24 +338,22 @@ openBtn.addEventListener('click', async () => {
     }
   } finally {
     operationInProgress = false;
-    // Re-enable button based on queue state
     updateButtonStates();
   }
 });
 
+// Skip button: shows different random link
 skipBtn.addEventListener('click', () => {
   if (skipBtn.disabled) {
-    // Show empty state message when clicking disabled button
     showErrorMessage('Your queue is empty');
     return;
   }
-  // Just show a different random link
   displayRandomLink();
 });
 
+// Delete button: removes current link
 deleteBtn.addEventListener('click', async () => {
   if (deleteBtn.disabled) {
-    // Show empty state message when clicking disabled button
     showErrorMessage('Your queue is empty');
     return;
   }
@@ -406,11 +370,11 @@ deleteBtn.addEventListener('click', async () => {
     }
   } finally {
     operationInProgress = false;
-    // Re-enable button based on queue state
     updateButtonStates();
   }
 });
 
+// Save current page button
 saveCurrentBtn.addEventListener('click', async () => {
   if (operationInProgress) return;
 
@@ -432,5 +396,5 @@ saveCurrentBtn.addEventListener('click', async () => {
 signInBtn.addEventListener('click', handleSignIn);
 dashboardBtn.addEventListener('click', handleDashboard);
 
-// Initialize when popup opens
+// Initialize popup
 init();
