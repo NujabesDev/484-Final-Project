@@ -28,10 +28,11 @@ Browser extension + web dashboard for saving links and retrieving them randomly.
 ## Key Files & Their Purposes
 
 ### Extension (`/extension/src/`)
-- `background.js` - Service worker: Firebase initialization, auth handling, message listener
-- `popup.js` - Extension popup UI: loads/saves/deletes links from Firestore
+- `background.js` - Service worker: Firebase initialization, auth handling, message handlers, cache management, Firestore operations
+- `popup.js` - Extension popup UI: sends messages to background for all data operations
 - `auth-bridge.js` - Content script for auth communication with website
-- `services/firestore.js` - Firestore CRUD operations for links
+- `services/firestore.js` - Firestore CRUD operations (used by background.js)
+- `config.js` - Centralized URL configuration
 - `manifest.json` - Extension manifest (Manifest V3)
 - `popup.html` - Popup UI structure
 - `popup.css` - Tailwind-based styles
@@ -91,14 +92,16 @@ Browser extension + web dashboard for saving links and retrieving them randomly.
   - Extension reads/writes directly to Firestore
   - Website will read from this collection (not yet implemented)
 
-#### chrome.storage.local (Cache Only)
+#### chrome.storage.local (Cache Only - Real-Time Sync)
 - `cachedQueue` - Cached copy of links array for instant popup UI
-- `cacheTimestamp` - When the cache was last updated
 
 **Note:**
 - Links are stored in Firestore (single source of truth)
 - Auth is handled by Firebase Auth with IndexedDB persistence (no manual token storage)
-- Cache is disposable and re-synced from Firestore on popup open
+- Cache is managed by background.js with **real-time sync via Firestore onSnapshot**
+- Cache is **always fresh** - automatically updates when Firestore changes
+- Popup loads instantly from cache (no query needed!)
+- Perfect for multi-device sync and dashboard deletions
 
 ## Build & Development
 
@@ -128,10 +131,11 @@ npm run dev
 ```
 extension/
 ├── src/
-│   ├── background.js          # Service worker (handles messages, Firebase ops)
-│   ├── popup.js               # Extension popup UI logic
+│   ├── background.js          # Service worker (message handlers, Firebase ops, cache)
+│   ├── popup.js               # Extension popup UI (message passing only)
 │   ├── auth-bridge.js         # Auth communication with website
-│   └── services/firestore.js  # Firestore CRUD operations for links
+│   ├── config.js              # URL configuration
+│   └── services/firestore.js  # Firestore CRUD operations (used by background)
 ├── dist/                      # Built extension (load this in browser)
 ├── manifest.json              # Extension configuration
 ├── popup.html                 # Popup UI
@@ -156,6 +160,15 @@ npm run build        # Builds for production
 - Cleaned up outdated root-level files
 - All link operations use Firestore exclusively
 - Version synced to 1.0.0 across project
+- **Refactored to standard Manifest V3 message passing architecture**
+  - Single Firebase instance in background.js only
+  - popup.js uses message passing (no direct Firebase imports)
+  - Cleaner separation of concerns
+- **Real-time sync via Firestore onSnapshot listener**
+  - Cache automatically updates when Firestore changes
+  - Perfect for dashboard deletions and multi-device sync
+  - No TTL polling - always fresh data with instant popup loads
+  - Listener lifecycle managed automatically (starts on sign in, stops on sign out)
 
 ### 🚧 Not Yet Implemented
 - **Website Dashboard**: Currently just a placeholder
@@ -186,6 +199,46 @@ npm run build        # Builds for production
 
 ## Important Patterns
 
+### Extension Architecture: Message Passing + Real-Time Sync
+
+**Key principle:** popup.js communicates with background.js via `chrome.runtime.sendMessage` - NO direct Firebase imports.
+
+**Background.js responsibilities:**
+- Single Firebase instance (auth + Firestore)
+- **Real-time sync via Firestore `onSnapshot` listener**
+- All data operations (load/save/delete links)
+- Automatic cache updates when Firestore changes
+- Message handler for all actions
+
+**Popup.js responsibilities:**
+- UI rendering only
+- Sends messages to background for data
+- Maintains local `queue` array for display
+- No Firebase dependencies
+
+**Message types:**
+- `GET_AUTH_STATE` - Returns current user
+- `GET_LINKS` - Returns links (always fresh from real-time cache!)
+- `SYNC_LINKS` - Manual refresh (rarely needed - real-time sync handles it)
+- `SAVE_LINK` - Saves link + updates cache
+- `DELETE_LINK` - Deletes link + updates cache
+
+**Real-Time Sync Flow:**
+1. User signs in → background.js starts `onSnapshot` listener
+2. Any Firestore change (dashboard, other device, etc.) → listener fires
+3. Listener automatically updates cache
+4. Popup always shows fresh data (instant!)
+5. User signs out → listener stops
+
+**Benefits:**
+- ✅ Single Firebase instance (service worker only)
+- ✅ Standard MV3 pattern (maintainable, debuggable)
+- ✅ **Real-time sync** - dashboard changes appear instantly!
+- ✅ **Perfect multi-device sync** - devices auto-update
+- ✅ Cache always fresh (no TTL polling needed)
+- ✅ Fewer Firestore queries (listener is more efficient)
+- ✅ Clear separation of concerns
+
 ### Extension-Website Communication
 - Uses window.postMessage for auth handoff
 - auth-bridge.js validates allowed origins before forwarding
@@ -202,27 +255,51 @@ npm run build        # Builds for production
 
 **Note:** Document ID is auto-generated by Firestore and used as the link ID
 
-## Data Flow
+## Data Flow (Real-Time Sync Architecture)
 
 ### Saving a Link
-1. User clicks link on Reddit/YouTube OR clicks "Save Current Page"
-2. Extension checks authentication
-3. Checks for duplicates in Firestore (`where('url', '==', url)`)
-4. If unique, saves to `users/{userId}/links` collection
-5. Updates local queue array for immediate UI feedback
+1. User clicks "Save Current Page" in popup
+2. **popup.js**: Sends `SAVE_LINK` message to background with {url, title}
+3. **background.js**: Receives message, checks authentication
+4. **background.js**: Saves to Firestore via `saveLinkToFirestore()` (checks duplicates)
+5. **background.js**: Updates cache immediately for instant feedback
+6. **background.js**: Returns new link object to popup
+7. **popup.js**: Adds to local queue array, displays immediately
+8. **Real-time listener**: Fires on ALL devices, updates their caches automatically! 🔥
 
-### Loading Links
+### Loading Links (Always Instant!)
 1. Extension popup opens
-2. Checks for authenticated user in chrome.storage.local
-3. If authenticated, queries Firestore for all links in `users/{userId}/links`
-4. Populates local queue array
-5. Displays random link from queue
+2. **popup.js**: Sends `GET_AUTH_STATE` message to background
+3. **background.js**: Returns current user from Firebase Auth
+4. **popup.js**: Sends `GET_LINKS` message to background
+5. **background.js**: Returns cached links (always fresh via real-time sync!)
+6. **popup.js**: Displays random link instantly!
+
+**Note:** No Firestore query needed! Real-time listener keeps cache fresh in background.
 
 ### Deleting a Link
 1. User clicks "Delete" or "Open & Remove"
-2. Deletes document from Firestore using document ID
-3. Removes from local queue array
-4. Updates UI to show next random link
+2. **popup.js**: Sends `DELETE_LINK` message to background with {linkId}
+3. **background.js**: Deletes from Firestore via `deleteLinkFromFirestore()`
+4. **background.js**: Updates local cache immediately
+5. **background.js**: Returns success to popup
+6. **popup.js**: Removes from local queue array, displays next random link
+7. **Real-time listener**: Fires on ALL devices, removes deleted link from their caches! 🔥
+
+### Real-Time Sync (Automatic!)
+**Background:** Firestore `onSnapshot` listener runs continuously while signed in
+
+**When dashboard deletes a link:**
+1. Website updates Firestore
+2. Extension's `onSnapshot` listener fires immediately (< 1 second!)
+3. Cache updates automatically
+4. Next popup open shows fresh data (deleted link is gone!)
+
+**When switching devices:**
+1. Save link on Device A → Firestore updated
+2. Device B's `onSnapshot` listener fires automatically
+3. Device B cache updated in real-time
+4. Open popup on Device B → Already has the new link!
 
 ## Productivity Mode
 
