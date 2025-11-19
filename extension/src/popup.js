@@ -1,3 +1,4 @@
+import './popup.css';
 import { WEBSITE_URL, buildAuthUrl } from './config.js';
 
 // Global state
@@ -5,6 +6,7 @@ let currentLink = null;
 let queue = [];
 let currentUser = null;
 let operationInProgress = false;
+let productivityMode = false;
 
 // Format timestamp to relative time (e.g., "2d ago")
 function getTimeAgo(timestamp) {
@@ -45,10 +47,17 @@ function getFaviconUrl(url) {
   }
 }
 
-// Send message to background script
+// Send message to background script with timeout
 function sendMessage(action, data = {}) {
   return new Promise((resolve, reject) => {
+    // Add 5-second timeout to prevent hung UI if service worker dies
+    const timeoutId = setTimeout(() => {
+      reject(new Error('Request timeout - please try again'));
+    }, 5000);
+
     chrome.runtime.sendMessage({ action, ...data }, (response) => {
+      clearTimeout(timeoutId); // Clear timeout on response
+
       if (chrome.runtime.lastError) {
         reject(new Error(chrome.runtime.lastError.message));
         return;
@@ -84,6 +93,16 @@ async function deleteLink(linkId) {
   return response;
 }
 
+async function getProductivityMode() {
+  const response = await sendMessage('GET_PRODUCTIVITY_MODE');
+  return response;
+}
+
+async function setProductivityMode(enabled) {
+  const response = await sendMessage('SET_PRODUCTIVITY_MODE', { enabled });
+  return response;
+}
+
 // DOM elements
 const mainContainer = document.getElementById('mainContainer');
 const authSection = document.getElementById('authSection');
@@ -108,16 +127,26 @@ const signedInDiv = document.getElementById('signedIn');
 const signInBtn = document.getElementById('signInBtn');
 const dashboardBtn = document.getElementById('dashboardBtn');
 const userAvatar = document.getElementById('userAvatar');
+const productivityToggle = document.getElementById('productivityToggle');
 
 // Initialize popup UI and load data
 async function init() {
   try {
     let authState = await getAuthState();
 
-    // Retry once if auth not ready
+    // If not authenticated, retry up to 3 times with exponential backoff
+    // This handles service worker restarts where Firebase needs time to restore from IndexedDB
     if (!authState.authenticated) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      authState = await getAuthState();
+      const retryDelays = [100, 300, 500]; // Progressive delays: 100ms, 300ms, 500ms
+
+      for (const delay of retryDelays) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+        authState = await getAuthState();
+
+        if (authState.authenticated) {
+          break; // Auth restored - stop retrying
+        }
+      }
     }
 
     currentUser = authState.user;
@@ -136,6 +165,13 @@ async function init() {
     }
 
     displayRandomLink();
+
+    // Load productivity mode state
+    const modeResponse = await getProductivityMode();
+    if (modeResponse.success) {
+      productivityMode = modeResponse.enabled;
+      updateProductivityToggleUI();
+    }
   } catch (error) {
     console.error('Failed to initialize popup:', error);
     showErrorMessage('Failed to load - please try again');
@@ -215,6 +251,7 @@ function displayRandomLink() {
     linkTitle.textContent = 'Your queue is empty';
     linkUrl.textContent = 'Save a link below!';
     updateButtonStates();
+    updateQueueCount(); // Update stats to hide when empty
     return;
   }
 
@@ -259,12 +296,15 @@ function showErrorMessage(message) {
 
 // Update queue stats display
 function updateQueueCount() {
+  // Always show stats bar to prevent layout shift
+  queueCount.classList.remove('hidden');
+
   if (queue.length === 0) {
-    queueCount.classList.add('hidden');
+    // Show placeholder values when empty
+    statsRemaining.textContent = '0 links';
+    statsTime.textContent = '0m ago';
     return;
   }
-
-  queueCount.classList.remove('hidden');
 
   const remaining = queue.length;
   statsRemaining.textContent = `${remaining} ${remaining !== 1 ? 'links' : 'link'}`;
@@ -273,7 +313,7 @@ function updateQueueCount() {
     const timeAgo = getTimeAgo(currentLink.createdAt);
     statsTime.textContent = `${timeAgo}`;
   } else {
-    statsTime.textContent = '0m Ago';
+    statsTime.textContent = '0m ago';
   }
 }
 
@@ -392,9 +432,54 @@ saveCurrentBtn.addEventListener('click', async () => {
   }
 });
 
+// Update productivity toggle UI
+function updateProductivityToggleUI() {
+  if (!productivityToggle) return;
+
+  const pill = productivityToggle.querySelector('div');
+
+  if (productivityMode) {
+    // ON state: green background, pill slides right
+    productivityToggle.style.backgroundColor = '#10b981';
+    productivityToggle.style.borderColor = '#059669';
+    if (pill) {
+      pill.style.transform = 'translateX(22px)';
+      pill.style.backgroundColor = 'white';
+    }
+  } else {
+    // OFF state: dark background, pill on left
+    productivityToggle.style.backgroundColor = '#262626';
+    productivityToggle.style.borderColor = '#1a1a1a';
+    if (pill) {
+      pill.style.transform = 'translateX(0)';
+      pill.style.backgroundColor = 'black';
+    }
+  }
+}
+
+// Handle productivity toggle click
+async function handleProductivityToggle() {
+  productivityMode = !productivityMode;
+  updateProductivityToggleUI();
+
+  try {
+    await setProductivityMode(productivityMode);
+  } catch (error) {
+    console.error('Failed to update productivity mode:', error);
+    // Revert on failure
+    productivityMode = !productivityMode;
+    updateProductivityToggleUI();
+  }
+}
+
 // Auth button listeners
 signInBtn.addEventListener('click', handleSignIn);
 dashboardBtn.addEventListener('click', handleDashboard);
+
+// Productivity toggle listener
+if (productivityToggle) {
+  productivityToggle.addEventListener('click', handleProductivityToggle);
+}
 
 // Initialize popup
 init();

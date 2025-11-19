@@ -33,21 +33,34 @@ export async function loadLinksFromFirestore(db, userId) {
  * @param {string} url - URL to save
  * @param {string} title - Page title
  * @returns {Promise<Object>} Saved link object
- * @throws {Error} If duplicate or invalid
+ * @throws {Error} If invalid URL
  */
 export async function saveLinkToFirestore(db, userId, url, title) {
   ensureAuthenticated(userId);
 
-  // Validate URL
+  // Validate URL format
+  let urlObj;
   try {
-    new URL(url);
+    urlObj = new URL(url);
   } catch (e) {
     throw new Error('Invalid URL format');
   }
 
+  // Validate URL scheme (only allow http/https)
+  if (!['http:', 'https:'].includes(urlObj.protocol)) {
+    throw new Error('Only HTTP and HTTPS URLs are supported');
+  }
+
+  // Validate URL length (prevent abuse)
+  if (url.length > 2048) {
+    throw new Error('URL is too long (max 2048 characters)');
+  }
+
   const linksRef = collection(db, 'users', userId, 'links');
 
-  // Check for duplicate
+  // Firestore duplicate check as safety net (rare, only if cache is stale)
+  // Cache check in background.js handles 99% of cases instantly
+  // This catches edge cases where cache is stale after service worker restart
   const duplicateQuery = query(linksRef, where('url', '==', url));
   const duplicateSnapshot = await getDocs(duplicateQuery);
 

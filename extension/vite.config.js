@@ -10,8 +10,8 @@ export default defineConfig({
       input: {
         background: resolve(__dirname, 'src/background.js'),
         popup: resolve(__dirname, 'src/popup.js'),
-        'popup-css': resolve(__dirname, 'src/popup.css'),
         'auth-bridge': resolve(__dirname, 'src/auth-bridge.js'),
+        'reddit-interceptor': resolve(__dirname, 'src/reddit-interceptor.js'),
       },
       output: {
         entryFileNames: '[name].js',
@@ -20,6 +20,6 @@ export default defineConfig({
         format: 'es',
       },
     },
-    minify: false, // Keep readable for debugging
+    minify: 'esbuild', // Minify for production (smaller bundle size)
   },
 })

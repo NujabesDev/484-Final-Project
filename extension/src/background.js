@@ -25,9 +25,6 @@ const auth = initializeAuth(app, {
 
 const db = getFirestore(app);
 
-// Export for services/firestore.js
-export { auth, db };
-
 // Real-time sync state
 let realtimeSyncUnsubscribe = null;
 let currentSyncUserId = null;
@@ -105,14 +102,6 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Restart sync after service worker restart if user is already authenticated
-setTimeout(() => {
-  if (auth.currentUser && !realtimeSyncUnsubscribe) {
-    console.log('Service worker restart detected - restarting sync');
-    startRealtimeSync(auth.currentUser.uid);
-  }
-}, 1000);
-
 chrome.runtime.onInstalled.addListener((details) => {
   // Open website on first install
   if (details.reason === 'install') {
@@ -144,6 +133,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   if (message.action === 'DELETE_LINK') {
     handleDeleteLink(message, sendResponse);
+    return true;
+  }
+
+  if (message.action === 'GET_PRODUCTIVITY_MODE') {
+    handleGetProductivityMode(sendResponse);
+    return true;
+  }
+
+  if (message.action === 'SET_PRODUCTIVITY_MODE') {
+    handleSetProductivityMode(message, sendResponse);
     return true;
   }
 
@@ -185,14 +184,16 @@ async function handleGetLinks(sendResponse) {
       return;
     }
 
-    // Ensure real-time sync is active
+    // Load cache first (instant!)
+    const cached = await loadCacheFromLocal();
+
+    // Restart real-time sync in background if needed (don't wait for it!)
+    // This prevents blocking on onSnapshot's initial Firestore fetch
     if (!realtimeSyncUnsubscribe) {
       startRealtimeSync(auth.currentUser.uid);
     }
 
-    const cached = await loadCacheFromLocal();
-
-    // Return cache if available
+    // Return cache immediately if available (don't wait for sync to start)
     if (cached.length > 0) {
       sendResponse({
         success: true,
@@ -201,7 +202,8 @@ async function handleGetLinks(sendResponse) {
       return;
     }
 
-    // Fetch from Firestore if no cache exists
+    // No cache - do initial fetch from Firestore
+    // (This only happens on very first load or after clearing storage)
     const freshLinks = await loadLinksFromFirestore(db, auth.currentUser.uid);
     await saveCacheToLocal(freshLinks);
 
@@ -218,7 +220,7 @@ async function handleGetLinks(sendResponse) {
   }
 }
 
-// Save link to Firestore
+// Save link to Firestore with cache update
 async function handleSaveLink(message, sendResponse) {
   try {
     const { url, title } = message;
@@ -231,7 +233,26 @@ async function handleSaveLink(message, sendResponse) {
       return;
     }
 
+    // Check cache for duplicates first (instant - avoids network call in most cases)
+    // Firestore also checks for duplicates as safety net (handles stale cache edge cases)
+    const currentCache = await loadCacheFromLocal();
+    if (currentCache.some(link => link.url === url)) {
+      sendResponse({
+        success: false,
+        error: 'Link already exists'
+      });
+      return;
+    }
+
+    // Save to Firestore (waits for confirmation, includes duplicate check as safety net)
     const newLink = await saveLinkToFirestore(db, auth.currentUser.uid, url, title);
+
+    // Update cache after successful Firestore save
+    // onSnapshot will also update cache, but this ensures immediate popup feedback
+    // Check prevents duplicate if onSnapshot already fired
+    if (!currentCache.some(l => l.id === newLink.id)) {
+      await saveCacheToLocal([...currentCache, newLink]);
+    }
 
     sendResponse({
       success: true,
@@ -246,7 +267,7 @@ async function handleSaveLink(message, sendResponse) {
   }
 }
 
-// Delete link from Firestore
+// Delete link from Firestore with cache update
 async function handleDeleteLink(message, sendResponse) {
   try {
     const { linkId } = message;
@@ -259,13 +280,60 @@ async function handleDeleteLink(message, sendResponse) {
       return;
     }
 
+    // Load cache before delete operation
+    const currentCache = await loadCacheFromLocal();
+
+    // Delete from Firestore (waits for confirmation)
     await deleteLinkFromFirestore(db, auth.currentUser.uid, linkId);
+
+    // Update cache after successful Firestore delete
+    // onSnapshot will also update cache, but this ensures immediate popup feedback
+    await saveCacheToLocal(currentCache.filter(l => l.id !== linkId));
 
     sendResponse({
       success: true
     });
   } catch (error) {
     console.error('Failed to delete link:', error);
+    sendResponse({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+// Get productivity mode state
+async function handleGetProductivityMode(sendResponse) {
+  try {
+    const result = await chrome.storage.local.get('productivityMode');
+    const enabled = result.productivityMode || false;
+
+    sendResponse({
+      success: true,
+      enabled: enabled
+    });
+  } catch (error) {
+    console.error('Failed to get productivity mode:', error);
+    sendResponse({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+// Set productivity mode state
+async function handleSetProductivityMode(message, sendResponse) {
+  try {
+    const { enabled } = message;
+
+    await chrome.storage.local.set({ productivityMode: enabled });
+
+    sendResponse({
+      success: true,
+      enabled: enabled
+    });
+  } catch (error) {
+    console.error('Failed to set productivity mode:', error);
     sendResponse({
       success: false,
       error: error.message
