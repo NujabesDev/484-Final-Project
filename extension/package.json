@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "build": "vite build && npm run copy-files",
+    "dev": "vite build --watch",
     "copy-files": "cp manifest.json dist/ && cp popup.html dist/"
   },
   "dependencies": {

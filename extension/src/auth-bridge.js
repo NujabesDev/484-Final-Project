@@ -1,6 +1,13 @@
 // Content script that bridges website <-> extension communication
 // Runs on the auth website and relays messages via postMessage
-import { ALLOWED_ORIGINS } from './config.js';
+
+// Allowed origins for postMessage communication
+// NOTE: Keep in sync with manifest.json content_scripts.matches
+const ALLOWED_ORIGINS = [
+  'https://484-final-project-three.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
 
 // Listen for messages from the webpage
 window.addEventListener('message', async (event) => {
