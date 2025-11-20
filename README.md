@@ -2,10 +2,6 @@
 
 A browser extension and web dashboard for saving links to read later, then retrieving them randomly one at a time. Eliminates choice paralysis by showing you just one link instead of an overwhelming list.
 
-
-# TODO
-Fix the link showing up twice in a row and weird animation change sometimes
-
 ## Testing the Extension
 
 ### Build
