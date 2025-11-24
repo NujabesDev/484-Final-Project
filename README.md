@@ -1,25 +1,14 @@
-# Read Later Random
+# ESP32 + SPH0645LM4H I2S MEMS Microphone Testing
 
-A browser extension and web dashboard for saving links to read later, then retrieving them randomly one at a time. Eliminates choice paralysis by showing you just one link instead of an overwhelming list.
+Testing setup for the SPH0645LM4H I2S MEMS microphone with ESP32.
 
-## Testing the Extension
+## Quick Start
 
-### Build
-```bash
-cd extension
-npm install
-npm run build
-```
+See `/esp32-mic-test/` folder for:
+- Wiring diagram (standard GPIO14/15/32 configuration)
+- Test program (`mic_test.ino`)
+- Setup instructions
 
-### Load in Chrome
-1. Go to `chrome://extensions/`
-2. Enable **Developer mode** (top-right toggle)
-3. Click **Load unpacked**
-4. Select the `extension/dist/` folder
+## Archive
 
-### Load in Firefox
-1. Go to `about:debugging#/runtime/this-firefox`
-2. Click **Load Temporary Add-on**
-3. Select `extension/dist/manifest.json`
-
-**Note:** Firefox removes temporary extensions when you close the browser. You'll need to reload it each time.
+Previous browser extension project moved to `/archive/`
