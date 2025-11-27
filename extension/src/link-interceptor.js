@@ -1,4 +1,18 @@
-// Content script for intercepting Reddit post clicks in Productivity Mode
+// Content script for intercepting Reddit posts and YouTube videos in Productivity Mode
+
+// Cache productivity mode state for synchronous access
+let productivityModeEnabled = false;
+
+// Initialize and listen for productivity mode changes
+chrome.storage.local.get('productivityMode').then(result => {
+  productivityModeEnabled = result.productivityMode || false;
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.productivityMode) {
+    productivityModeEnabled = changes.productivityMode.newValue || false;
+  }
+});
 
 // Add notification styles once
 const style = document.createElement('style');
@@ -78,7 +92,19 @@ function isRedditPostUrl(url) {
   }
 }
 
-// Extract post title from link element
+// Check if URL is a YouTube video
+function isYouTubeVideoUrl(url) {
+  try {
+    const urlObj = new URL(url);
+    // Check for youtube.com/watch or youtu.be/ patterns
+    return (urlObj.hostname.includes('youtube.com') && urlObj.pathname.includes('/watch')) ||
+           urlObj.hostname.includes('youtu.be');
+  } catch (e) {
+    return false;
+  }
+}
+
+// Extract post title from Reddit link element
 function extractPostTitle(element) {
   // Try to find title text in the clicked element or its parent
   let titleElement = element;
@@ -103,27 +129,56 @@ function extractPostTitle(element) {
   return element.textContent.trim() || 'Reddit Post';
 }
 
+// Extract video title from YouTube link element
+function extractYouTubeTitle(element) {
+  // Try aria-label first (most reliable for YouTube)
+  if (element.getAttribute('aria-label')) {
+    return element.getAttribute('aria-label').trim();
+  }
+
+  // Try to find title in parent container
+  let titleElement = element;
+  for (let i = 0; i < 5; i++) {
+    if (!titleElement) break;
+
+    // Check for YouTube title selectors
+    const possibleTitle = titleElement.querySelector('#video-title') ||
+                         titleElement.querySelector('h3') ||
+                         titleElement.querySelector('.title');
+
+    if (possibleTitle && possibleTitle.textContent.trim()) {
+      return possibleTitle.textContent.trim();
+    }
+
+    titleElement = titleElement.parentElement;
+  }
+
+  // Fallback: use link text or default
+  return element.textContent.trim() || 'YouTube Video';
+}
+
 // Handle link click
 async function handleClick(event) {
   const target = event.target.closest('a');
   if (!target || !target.href) return;
 
-  // Check if this is a Reddit post link
-  if (!isRedditPostUrl(target.href)) return;
+  // Check if this is a Reddit post or YouTube video
+  const isReddit = isRedditPostUrl(target.href);
+  const isYouTube = isYouTubeVideoUrl(target.href);
 
-  // Check if productivity mode is enabled
-  const result = await chrome.storage.local.get('productivityMode');
-  const isEnabled = result.productivityMode || false;
+  // Only proceed if it's a supported link type
+  if (!isReddit && !isYouTube) return;
 
-  if (!isEnabled) return;
+  // Check if productivity mode is enabled (synchronous check!)
+  if (!productivityModeEnabled) return;
 
-  // Prevent navigation
+  // ✅ Prevent navigation IMMEDIATELY (before any async operations)
   event.preventDefault();
   event.stopPropagation();
 
-  // Extract title and URL
+  // Extract title and URL based on platform
   const url = target.href;
-  const title = extractPostTitle(target);
+  const title = isReddit ? extractPostTitle(target) : extractYouTubeTitle(target);
 
   try {
     // Send to background script - it handles all validation and duplicate checking
@@ -144,7 +199,7 @@ async function handleClick(event) {
       showNotification('Failed to save', 'error');
     }
   } catch (error) {
-    console.error('Failed to save Reddit link:', error);
+    console.error('Failed to save link:', error);
     showNotification('Extension error', 'error');
   }
 }

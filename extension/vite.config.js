@@ -11,7 +11,7 @@ export default defineConfig({
         background: resolve(__dirname, 'src/background.js'),
         popup: resolve(__dirname, 'src/popup.js'),
         'auth-bridge': resolve(__dirname, 'src/auth-bridge.js'),
-        'reddit-interceptor': resolve(__dirname, 'src/reddit-interceptor.js'),
+        'link-interceptor': resolve(__dirname, 'src/link-interceptor.js'),
       },
       output: {
         entryFileNames: '[name].js',

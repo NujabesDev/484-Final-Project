@@ -1,6 +1,8 @@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { DataTableRowActions } from './data-table-row-actions'
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 /**
  * Format timestamp to "2d ago" style
@@ -62,7 +64,21 @@ export const columns = [
   },
   {
     accessorKey: 'title',
-    header: 'Title',
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted()
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="hover:bg-neutral-800 -ml-4 h-8 data-[state=open]:bg-neutral-800"
+        >
+          Title
+          {isSorted === 'asc' && <ArrowUp className="ml-2 h-4 w-4" />}
+          {isSorted === 'desc' && <ArrowDown className="ml-2 h-4 w-4" />}
+          {!isSorted && <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />}
+        </Button>
+      )
+    },
     cell: ({ row }) => {
       const title = row.getValue('title')
       return (
@@ -97,7 +113,21 @@ export const columns = [
   },
   {
     accessorKey: 'createdAt',
-    header: 'Saved',
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted()
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="hover:bg-neutral-800 -ml-4 h-8 data-[state=open]:bg-neutral-800"
+        >
+          Saved
+          {isSorted === 'asc' && <ArrowUp className="ml-2 h-4 w-4" />}
+          {isSorted === 'desc' && <ArrowDown className="ml-2 h-4 w-4" />}
+          {!isSorted && <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />}
+        </Button>
+      )
+    },
     cell: ({ row }) => {
       const timestamp = row.getValue('createdAt')
       return (

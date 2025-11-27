@@ -1,16 +1,24 @@
 {
-  "_comment": "IMPORTANT: content_scripts.matches must stay in sync with auth-bridge.js ALLOWED_ORIGINS and config.js ALLOWED_ORIGINS (both must be manually updated)",
   "manifest_version": 3,
   "name": "Read Later Random",
   "version": "1.0.0",
   "description": "Save links and view them randomly one at a time",
-  "permissions": ["storage", "activeTab", "tabs"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://*.google.com/*",
+    "https://*.googleapis.com/*",
+    "https://*.gstatic.com/*"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_title": "Read Later Random"
   },
   "background": {
-    "scripts": ["background.js"],
+    "service_worker": "background.js",
     "type": "module"
   },
   "content_scripts": [
@@ -20,14 +28,19 @@
         "http://localhost:5173/*",
         "http://localhost:3000/*"
       ],
-      "js": ["auth-bridge.js"],
+      "js": [
+        "auth-bridge.js"
+      ],
       "run_at": "document_start"
     },
     {
       "matches": [
-        "*://*.reddit.com/*"
+        "*://*.reddit.com/*",
+        "*://*.youtube.com/*"
       ],
-      "js": ["reddit-interceptor.js"],
+      "js": [
+        "link-interceptor.js"
+      ],
       "run_at": "document_end"
     }
   ],
@@ -37,4 +50,3 @@
     }
   }
 }
-
