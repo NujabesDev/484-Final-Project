@@ -1,0 +1,29 @@
+{
+  "name": "484-final-project",
+  "version": "1.0.0",
+  "description": "A browser extension and web dashboard for saving links to read later, then retrieving them randomly one at a time. Eliminates choice paralysis by showing you just one link instead of an overwhelming list.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NujabesDev/484-Final-Project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/NujabesDev/484-Final-Project/issues"
+  },
+  "homepage": "https://github.com/NujabesDev/484-Final-Project#readme",
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
+    "firebase": "^12.6.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "sonner": "^2.0.7",
+    "vite": "^7.2.4"
+  }
+}

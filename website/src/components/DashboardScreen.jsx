@@ -12,42 +12,42 @@ export function DashboardScreen({ user }) {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
-  // useEffect(() => {
-  //   if (!user) return
-
-  //   async function fetchLinks() {
-  //     try {
-  //       const linksData = await loadLinksFromFirestore(user.uid)
-  //       setLinks(linksData)
-  //     } catch (error) {
-  //       console.error('Error fetching links:', error)
-  //       toast.error('Failed to load links')
-  //     } finally {
-  //       setLoading(false)
-  //     }
-  //   }
-
-  //   fetchLinks()
-  // }, [user])
-
   useEffect(() => {
-    // TEMPORARY: Mock data for testing
-    setLinks([
-      {
-        id: '1',
-        title: 'Example Link 1',
-        url: 'https://example.com',
-        createdAt: Date.now() - 1000 * 60 * 15 // 15 min ago
-      },
-      {
-        id: '2',
-        title: 'Example Link 2',
-        url: 'https://google.com',
-        createdAt: Date.now() - 1000 * 60 * 60 * 24 // 1 day ago
+    if (!user) return
+
+    async function fetchLinks() {
+      try {
+        const linksData = await loadLinksFromFirestore(user.uid)
+        setLinks(linksData)
+      } catch (error) {
+        console.error('Error fetching links:', error)
+        toast.error('Failed to load links')
+      } finally {
+        setLoading(false)
       }
-    ])
-    setLoading(false)
-  }, [])
+    }
+
+    fetchLinks()
+  }, [user])
+
+  // useEffect(() => {
+  //   // TEMPORARY: Mock data for testing
+  //   setLinks([
+  //     {
+  //       id: '1',
+  //       title: 'Example Link 1',
+  //       url: 'https://example.com',
+  //       createdAt: Date.now() - 1000 * 60 * 15 // 15 min ago
+  //     },
+  //     {
+  //       id: '2',
+  //       title: 'Example Link 2',
+  //       url: 'https://google.com',
+  //       createdAt: Date.now() - 1000 * 60 * 60 * 24 // 1 day ago
+  //     }
+  //   ])
+  //   setLoading(false)
+  // }, [])
 
   const handleSignOut = async () => {
     try {
