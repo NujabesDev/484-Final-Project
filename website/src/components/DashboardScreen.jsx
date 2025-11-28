@@ -122,7 +122,7 @@ export function DashboardScreen({ user }) {
 
         {/* Title and subtitle */}
         <div className="mb-8">
-          <h1 className="text-6xl font-serif text-white mb-2">Saved Links</h1>
+          <h1 className="text-6xl text-white mb-2">Saved Links</h1>
           <p className="text-neutral-500 text-lg">Manage your saved links from the extension</p>
         </div>
 
