@@ -133,7 +133,7 @@ export function DashboardScreen({ user }) {
           )}
 
           {/* Center - Title */}
-          <h1 className="text-white text-3xl font-medium tracking-wide min-w-[400px]">
+          <h1 className="text-white text-4xl font-medium tracking-wide min-w-[400px]">
             {displayedTitle}
             <span className="animate-pulse">|</span>
           </h1>
@@ -172,7 +172,7 @@ export function DashboardScreen({ user }) {
           <div className="mb-8">
             <div className="flex items-center gap-6 mb-6">
               {/* Left - Title */}
-              <h2 className="text-6xl text-white font-medium">Saved Links</h2>
+              <h2 className="text-4xl text-white font-medium">Saved Links</h2>
 
               {/* Search bar - wider and closer */}
               <div className="relative flex-1 max-w-2xl">
@@ -181,9 +181,9 @@ export function DashboardScreen({ user }) {
                   placeholder=""
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-6 py-3 bg-white text-black rounded-full border-2 border-white focus:outline-none placeholder-neutral-500"
+                  className="w-full pl-12 pr-6 py-3 bg-black text-white rounded-full border border-white focus:outline-none placeholder-neutral-500"
                 />
-                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6" fill="white" viewBox="0 0 24 24">
                   <path d="M21.71 20.29l-5.4-5.4a8 8 0 10-1.42 1.42l5.4 5.4a1 1 0 001.42 0 1 1 0 000-1.42zM4 10a6 6 0 116 6 6 6 0 01-6-6z" />
                 </svg>
               </div>
