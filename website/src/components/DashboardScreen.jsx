@@ -114,7 +114,7 @@ export function DashboardScreen({ user }) {
     <div className="min-h-screen bg-black">
       {/* Black top bar - rounded */}
       <div className="w-full bg-black px-8 py-8 rounded-3xl">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="max-w-7xl mx-auto flex items-center justify-between relative">
           {/* Left - Profile (smaller) */}
           {user && (
             <div className="flex items-center gap-2">
@@ -133,7 +133,7 @@ export function DashboardScreen({ user }) {
           )}
 
           {/* Center - Title */}
-          <h1 className="text-white text-4xl font-medium tracking-wide]">
+          <h1 className="text-white text-4xl font-medium tracking-wide text-center absolute left-1/2 -translate-x-1/2">
             {displayedTitle}
             <span className="animate-pulse">|</span>
           </h1>
