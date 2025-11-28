@@ -30,25 +30,6 @@ export function DashboardScreen({ user }) {
     fetchLinks()
   }, [user])
 
-  // useEffect(() => {
-  //   // TEMPORARY: Mock data for testing
-  //   setLinks([
-  //     {
-  //       id: '1',
-  //       title: 'Example Link 1',
-  //       url: 'https://example.com',
-  //       createdAt: Date.now() - 1000 * 60 * 15 // 15 min ago
-  //     },
-  //     {
-  //       id: '2',
-  //       title: 'Example Link 2',
-  //       url: 'https://google.com',
-  //       createdAt: Date.now() - 1000 * 60 * 60 * 24 // 1 day ago
-  //     }
-  //   ])
-  //   setLoading(false)
-  // }, [])
-
   const handleSignOut = async () => {
     try {
       await signOut()
