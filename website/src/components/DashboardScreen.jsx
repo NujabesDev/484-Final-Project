@@ -93,118 +93,259 @@ export function DashboardScreen({ user }) {
   })
 
   return (
-    <div className="min-h-screen bg-black p-6 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header with user info and sign out */}
-        {user && (
-          <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-[#d9d9d9]">
+      {/* Black top bar */}
+      <div className="w-full bg-black px-8 py-6">
+        <div className="max-w-7xl mx-auto">
+          {/* Profile on the left */}
+          {user && (
             <div className="flex items-center gap-3">
               <img
                 src={user.photoURL || 'https://via.placeholder.com/48'}
                 alt="Profile"
-                className="w-12 h-12 rounded-full border-2 border-neutral-800"
+                className="w-14 h-14 rounded-full"
               />
               <div>
-                <p className="text-white font-medium">
+                <p className="text-white font-medium text-lg">
                   {user.displayName || 'User'}
                 </p>
                 <p className="text-neutral-400 text-sm">{user.email}</p>
               </div>
             </div>
-            <button
-              onClick={handleSignOut}
-              className="px-5 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg transition-colors font-medium border border-neutral-800"
-            >
-              Sign Out
-            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Main content area */}
+      <div className="p-6 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Title and subtitle */}
+          <div className="mb-8">
+            <h1 className="text-6xl text-black mb-2">Saved Links</h1>
+            <p className="text-neutral-700 text-lg">Manage your saved links from the extension</p>
           </div>
-        )}
 
-        {/* Title and subtitle */}
-        <div className="mb-8">
-          <h1 className="text-6xl text-white mb-2">Saved Links</h1>
-          <p className="text-neutral-500 text-lg">Manage your saved links from the extension</p>
-        </div>
-
-        {/* Search Bar */}
-        <div className="mb-6">
-          <input
-            type="text"
-            placeholder="Search links..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-6 py-4 bg-neutral-900 text-white rounded-xl border border-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-700 placeholder-neutral-500"
-          />
-        </div>
-
-        {/* Link count */}
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-neutral-400 text-sm">
-            {filteredLinks.length} link{filteredLinks.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-
-        {/* Loading State */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-40 w-full rounded-xl" />
-            ))}
+          {/* Search Bar */}
+          <div className="mb-6">
+            <input
+              type="text"
+              placeholder="Search links..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-6 py-4 bg-white text-black rounded-xl border-2 border-black focus:outline-none focus:ring-2 focus:ring-neutral-700 placeholder-neutral-500"
+            />
           </div>
-        ) : filteredLinks.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-neutral-500 text-lg">
-              {searchQuery
-                ? 'No links match your search'
-                : 'No links saved yet. Start saving from the extension!'}
+
+          {/* Link count */}
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-neutral-700 text-sm">
+              {filteredLinks.length} link{filteredLinks.length !== 1 ? 's' : ''}
             </p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredLinks.map((link) => (
-              <div
-                key={link.id}
-                className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 hover:bg-neutral-800 transition-colors"
-              >
-                {/* Card Content */}
-                <div className="mb-4">
-                  <h3 className="text-white font-bold text-lg mb-2 line-clamp-2">
-                    {link.title}
-                  </h3>
-                  <p className="text-neutral-400 text-sm mb-1">
-                    {getDomain(link.url)}
-                  </p>
-                  <p className="text-neutral-500 text-xs">
-                    {getTimeAgo(link.createdAt)}
-                  </p>
-                </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleCopy(link.url)}
-                    className="flex-1 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors text-sm font-medium border border-neutral-700"
-                  >
-                    Copy
-                  </button>
-                  <button
-                    onClick={() => handleOpen(link.url, link.id)}
-                    className="flex-1 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors text-sm font-medium border border-neutral-700"
-                  >
-                    Open
-                  </button>
-                  <button
-                    onClick={() => handleDelete(link.id)}
-                    className="flex-1 px-3 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-lg transition-colors text-sm font-medium border border-red-900/50"
-                  >
-                    Delete
-                  </button>
+          {/* Loading State */}
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-40 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : filteredLinks.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-neutral-700 text-lg">
+                {searchQuery
+                  ? 'No links match your search'
+                  : 'No links saved yet. Start saving from the extension!'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredLinks.map((link) => (
+                <div
+                  key={link.id}
+                  className="bg-white border-2 border-black rounded-xl p-5 hover:bg-neutral-100 transition-colors"
+                >
+                  {/* Card Content */}
+                  <div className="mb-4">
+                    <h3 className="text-black font-bold text-lg mb-2 line-clamp-2">
+                      {link.title}
+                    </h3>
+                    <p className="text-neutral-600 text-sm mb-1">
+                      {getDomain(link.url)}
+                    </p>
+                    <p className="text-neutral-500 text-xs">
+                      {getTimeAgo(link.createdAt)}
+                    </p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleCopy(link.url)}
+                      className="flex-1 px-3 py-2 bg-neutral-200 hover:bg-neutral-300 text-black rounded-lg transition-colors text-sm font-medium border border-black"
+                    >
+                      Copy
+                    </button>
+                    <button
+                      onClick={() => handleOpen(link.url, link.id)}
+                      className="flex-1 px-3 py-2 bg-neutral-200 hover:bg-neutral-300 text-black rounded-lg transition-colors text-sm font-medium border border-black"
+                    >
+                      Open
+                    </button>
+                    <button
+                      onClick={() => handleDelete(link.id)}
+                      className="flex-1 px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors text-sm font-medium border border-red-700"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//   return (
+//     <div className="min-h-screen bg-black p-6 md:p-8">
+//       <div className="max-w-7xl mx-auto">
+//         {/* Header with user info and sign out */}
+//         {user && (
+//           <div className="flex items-center justify-between mb-8">
+//             <div className="flex items-center gap-3">
+//               <img
+//                 src={user.photoURL || 'https://via.placeholder.com/48'}
+//                 alt="Profile"
+//                 className="w-12 h-12 rounded-full border-2 border-neutral-800"
+//               />
+//               <div>
+//                 <p className="text-white font-medium">
+//                   {user.displayName || 'User'}
+//                 </p>
+//                 <p className="text-neutral-400 text-sm">{user.email}</p>
+//               </div>
+//             </div>
+//             <button
+//               onClick={handleSignOut}
+//               className="px-5 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg transition-colors font-medium border border-neutral-800"
+//             >
+//               Sign Out
+//             </button>
+//           </div>
+//         )}
+
+//         {/* Title and subtitle */}
+//         <div className="mb-8">
+//           <h1 className="text-6xl text-white mb-2">Saved Links</h1>
+//           <p className="text-neutral-500 text-lg">Manage your saved links from the extension</p>
+//         </div>
+
+//         {/* Search Bar */}
+//         <div className="mb-6">
+//           <input
+//             type="text"
+//             placeholder="Search links..."
+//             value={searchQuery}
+//             onChange={(e) => setSearchQuery(e.target.value)}
+//             className="w-full px-6 py-4 bg-neutral-900 text-white rounded-xl border border-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-700 placeholder-neutral-500"
+//           />
+//         </div>
+
+//         {/* Link count */}
+//         <div className="flex items-center justify-between mb-4">
+//           <p className="text-neutral-400 text-sm">
+//             {filteredLinks.length} link{filteredLinks.length !== 1 ? 's' : ''}
+//           </p>
+//         </div>
+
+//         {/* Loading State */}
+//         {loading ? (
+//           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+//             {[...Array(6)].map((_, i) => (
+//               <Skeleton key={i} className="h-40 w-full rounded-xl" />
+//             ))}
+//           </div>
+//         ) : filteredLinks.length === 0 ? (
+//           <div className="text-center py-16">
+//             <p className="text-neutral-500 text-lg">
+//               {searchQuery
+//                 ? 'No links match your search'
+//                 : 'No links saved yet. Start saving from the extension!'}
+//             </p>
+//           </div>
+//         ) : (
+//           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+//             {filteredLinks.map((link) => (
+//               <div
+//                 key={link.id}
+//                 className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 hover:bg-neutral-800 transition-colors"
+//               >
+//                 {/* Card Content */}
+//                 <div className="mb-4">
+//                   <h3 className="text-white font-bold text-lg mb-2 line-clamp-2">
+//                     {link.title}
+//                   </h3>
+//                   <p className="text-neutral-400 text-sm mb-1">
+//                     {getDomain(link.url)}
+//                   </p>
+//                   <p className="text-neutral-500 text-xs">
+//                     {getTimeAgo(link.createdAt)}
+//                   </p>
+//                 </div>
+
+//                 {/* Action Buttons */}
+//                 <div className="flex gap-2">
+//                   <button
+//                     onClick={() => handleCopy(link.url)}
+//                     className="flex-1 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors text-sm font-medium border border-neutral-700"
+//                   >
+//                     Copy
+//                   </button>
+//                   <button
+//                     onClick={() => handleOpen(link.url, link.id)}
+//                     className="flex-1 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors text-sm font-medium border border-neutral-700"
+//                   >
+//                     Open
+//                   </button>
+//                   <button
+//                     onClick={() => handleDelete(link.id)}
+//                     className="flex-1 px-3 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded-lg transition-colors text-sm font-medium border border-red-900/50"
+//                   >
+//                     Delete
+//                   </button>
+//                 </div>
+//               </div>
+//             ))}
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   )
+// }
