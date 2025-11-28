@@ -168,21 +168,42 @@ export function DashboardScreen({ user }) {
       {/* Main content area */}
       <div className="p-6 md:p-8">
         <div className="max-w-7xl mx-auto">
-          {/* Title and subtitle */}
+          {/* Saved Links section */}
           <div className="mb-8">
-            <h1 className="text-6xl text-black mb-2">Saved Links</h1>
-            <p className="text-neutral-700 text-lg">Manage your saved links from the extension</p>
-          </div>
+            <div className="flex items-center justify-between mb-6">
+              {/* Left - Title */}
+              <h2 className="text-6xl text-black font-medium">Saved Links</h2>
 
-          {/* Search Bar */}
-          <div className="mb-6">
-            <input
-              type="text"
-              placeholder="Search links..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-6 py-4 bg-white text-black rounded-xl border-2 border-black focus:outline-none focus:ring-2 focus:ring-neutral-700 placeholder-neutral-500"
-            />
+              {/* Right - Search, Sort, Filter */}
+              <div className="flex items-center gap-4">
+                {/* Search bar */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder=""
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-96 pl-12 pr-6 py-3 bg-white text-black rounded-full border-2 border-black focus:outline-none placeholder-neutral-500"
+                  />
+                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M21.71 20.29l-5.4-5.4a8 8 0 10-1.42 1.42l5.4 5.4a1 1 0 001.42 0 1 1 0 000-1.42zM4 10a6 6 0 116 6 6 6 0 01-6-6z" />
+                  </svg>
+                </div>
+
+                {/* Sort button */}
+                <button className="px-8 py-3 bg-white text-black rounded-full border-2 border-black hover:bg-black hover:text-white transition-colors font-medium">
+                  Sort
+                </button>
+
+                {/* Filter button */}
+                <button className="px-8 py-3 bg-white text-black rounded-full border-2 border-black hover:bg-black hover:text-white transition-colors font-medium">
+                  Filter
+                </button>
+              </div>
+            </div>
+
+            {/* Horizontal line */}
+            <div className="w-full h-0.5 bg-black"></div>
           </div>
 
           {/* Link count */}
