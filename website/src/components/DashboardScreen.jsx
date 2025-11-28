@@ -111,7 +111,7 @@ export function DashboardScreen({ user }) {
   })
 
   return (
-    <div className="min-h-screen bg-[#d9d9d9]">
+    <div className="min-h-screen bg-black">
       {/* Black top bar - rounded */}
       <div className="w-full bg-black px-8 py-4 rounded-3xl">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -170,45 +170,42 @@ export function DashboardScreen({ user }) {
         <div className="max-w-7xl mx-auto">
           {/* Saved Links section */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-6 mb-6">
               {/* Left - Title */}
-              <h2 className="text-6xl text-black font-medium">Saved Links</h2>
+              <h2 className="text-6xl text-white font-medium">Saved Links</h2>
 
-              {/* Right - Search, Sort, Filter */}
-              <div className="flex items-center gap-4">
-                {/* Search bar */}
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder=""
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-96 pl-12 pr-6 py-3 bg-white text-black rounded-full border-2 border-black focus:outline-none placeholder-neutral-500"
-                  />
-                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M21.71 20.29l-5.4-5.4a8 8 0 10-1.42 1.42l5.4 5.4a1 1 0 001.42 0 1 1 0 000-1.42zM4 10a6 6 0 116 6 6 6 0 01-6-6z" />
-                  </svg>
-                </div>
-
-                {/* Sort button */}
-                <button className="px-8 py-3 bg-white text-black rounded-full border-2 border-black hover:bg-black hover:text-white transition-colors font-medium">
-                  Sort
-                </button>
-
-                {/* Filter button */}
-                <button className="px-8 py-3 bg-white text-black rounded-full border-2 border-black hover:bg-black hover:text-white transition-colors font-medium">
-                  Filter
-                </button>
+              {/* Search bar - wider and closer */}
+              <div className="relative flex-1 max-w-2xl">
+                <input
+                  type="text"
+                  placeholder=""
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-6 py-3 bg-white text-black rounded-full border-2 border-white focus:outline-none placeholder-neutral-500"
+                />
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M21.71 20.29l-5.4-5.4a8 8 0 10-1.42 1.42l5.4 5.4a1 1 0 001.42 0 1 1 0 000-1.42zM4 10a6 6 0 116 6 6 6 0 01-6-6z" />
+                </svg>
               </div>
+
+              {/* Sort button */}
+              <button className="px-8 py-3 bg-transparent text-white rounded-full border-2 border-white hover:bg-white hover:text-black transition-colors font-medium">
+                Sort
+              </button>
+
+              {/* Filter button */}
+              <button className="px-8 py-3 bg-transparent text-white rounded-full border-2 border-white hover:bg-white hover:text-black transition-colors font-medium">
+                Filter
+              </button>
             </div>
 
             {/* Horizontal line */}
-            <div className="w-full h-0.5 bg-black"></div>
+            <div className="w-full h-0.5 bg-white"></div>
           </div>
 
           {/* Link count */}
           <div className="flex items-center justify-between mb-4">
-            <p className="text-neutral-700 text-sm">
+            <p className="text-white text-sm">
               {filteredLinks.length} link{filteredLinks.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -222,7 +219,7 @@ export function DashboardScreen({ user }) {
             </div>
           ) : filteredLinks.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-neutral-700 text-lg">
+              <p className="text-white text-lg">
                 {searchQuery
                   ? 'No links match your search'
                   : 'No links saved yet. Start saving from the extension!'}
@@ -278,9 +275,3 @@ export function DashboardScreen({ user }) {
     </div>
   )
 }
-
-
-
-
-
-
