@@ -7,10 +7,13 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 
+
 export function DashboardScreen({ user }) {
   const [links, setLinks] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [displayedTitle, setDisplayedTitle] = useState('')
+  const fullTitle = 'Read Later Randomly'
 
   useEffect(() => {
     if (!user) return
@@ -29,6 +32,21 @@ export function DashboardScreen({ user }) {
 
     fetchLinks()
   }, [user])
+
+  // Typewriter effect for title
+  useEffect(() => {
+    let currentIndex = 0
+    const interval = setInterval(() => {
+      if (currentIndex <= fullTitle.length) {
+        setDisplayedTitle(fullTitle.slice(0, currentIndex))
+        currentIndex++
+      } else {
+        clearInterval(interval)
+      }
+    }, 100) // 100ms per character - adjust for speed
+
+    return () => clearInterval(interval)
+  }, [])
 
   const handleSignOut = async () => {
     try {
@@ -115,8 +133,9 @@ export function DashboardScreen({ user }) {
           )}
 
           {/* Center - Title */}
-          <h1 className="text-white text-3xl font-medium tracking-wide">
-            Read Later Randomly
+          <h1 className="text-white text-3xl font-medium tracking-wide min-w-[400px]">
+            {displayedTitle}
+            <span className="animate-pulse">|</span>
           </h1>
 
           {/* Right - Icons and Sign Out */}
@@ -145,6 +164,7 @@ export function DashboardScreen({ user }) {
           </div>
         </div>
       </div>
+
       {/* Main content area */}
       <div className="p-6 md:p-8">
         <div className="max-w-7xl mx-auto">
