@@ -113,7 +113,7 @@ export function DashboardScreen({ user }) {
   return (
     <div className="min-h-screen bg-black">
       {/* Black top bar - rounded */}
-      <div className="w-full bg-black px-8 py-4 rounded-3xl">
+      <div className="w-full bg-black px-8 py-8 rounded-3xl">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Left - Profile (smaller) */}
           {user && (
@@ -189,18 +189,18 @@ export function DashboardScreen({ user }) {
               </div>
 
               {/* Sort button */}
-              <button className="px-8 py-3 bg-transparent text-white rounded-full border-2 border-white hover:bg-white hover:text-black transition-colors font-medium">
+              <button className="px-8 py-3 bg-transparent text-white rounded-full border border-white hover:bg-white hover:text-black transition-colors font-medium">
                 Sort
               </button>
 
               {/* Filter button */}
-              <button className="px-8 py-3 bg-transparent text-white rounded-full border-2 border-white hover:bg-white hover:text-black transition-colors font-medium">
+              <button className="px-8 py-3 bg-transparent text-white rounded-full border border-white hover:bg-white hover:text-black transition-colors font-medium">
                 Filter
               </button>
             </div>
 
             {/* Horizontal line */}
-            <div className="w-full h-0.5 bg-white"></div>
+            <div className="w-full h-px bg-white"></div>
           </div>
 
           {/* Link count */}
