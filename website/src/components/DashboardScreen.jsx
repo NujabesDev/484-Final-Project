@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 
 
-export function DashboardScreen({ user, onNavigateToStats }) {
+export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
   const [links, setLinks] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -460,7 +460,7 @@ export function DashboardScreen({ user, onNavigateToStats }) {
                 <div className="absolute top-full right-0 mt-2 bg-neutral-900 border border-white rounded-lg shadow-lg overflow-hidden z-50 w-48">
                   <button
                     onClick={() => {
-                      window.open('https://github.com/anthropics/claude-code/issues', '_blank')
+                      onNavigateToFAQ()
                       setShowHelpPopup(false)
                     }}
                     className="w-full px-6 py-3 text-left text-white hover:bg-neutral-800 transition-colors text-sm font-medium"

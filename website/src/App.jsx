@@ -4,6 +4,7 @@ import { StorageChoiceScreen } from '@/components/StorageChoiceScreen'
 import { DashboardIntroScreen } from '@/components/DashboardIntroScreen'
 import { DashboardScreen } from '@/components/DashboardScreen'
 import { StatsScreen } from '@/components/StatsScreen'
+import { FAQScreen } from '@/components/FAQScreen'
 import { onAuthChange, signOut } from '@/lib/auth'
 import { auth } from '@/lib/firebase-config'
 import { Toaster } from '@/components/ui/sonner'
@@ -71,8 +72,15 @@ function App() {
       onChoose={(choice) => setStorageChoice(choice)}
       extensionParams={extensionParams}
     />,
-    <DashboardScreen key="dashboard" storageChoice={storageChoice} user={user} onNavigateToStats={() => setCurrentScreen(4)} />,
+    <DashboardScreen
+      key="dashboard"
+      storageChoice={storageChoice}
+      user={user}
+      onNavigateToStats={() => setCurrentScreen(4)}
+      onNavigateToFAQ={() => setCurrentScreen(5)}
+    />,
     <StatsScreen key="stats" user={user} onBack={() => setCurrentScreen(3)} />,
+    <FAQScreen key="faq" user={user} onBack={() => setCurrentScreen(3)} />,
   ]
 
   const handleLeftThirdClick = () => {

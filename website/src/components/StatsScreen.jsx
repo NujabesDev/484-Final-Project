@@ -7,7 +7,7 @@ export function StatsScreen({ user, onBack }) {
   const [loading, setLoading] = useState(true)
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [displayedTitle, setDisplayedTitle] = useState('')
-  const fullTitle = 'Statistics.'
+  const fullTitle = 'Statistics'
 
   useEffect(() => {
     if (!user) return
