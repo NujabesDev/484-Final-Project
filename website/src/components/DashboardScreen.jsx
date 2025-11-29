@@ -233,7 +233,7 @@ export function DashboardScreen({ user }) {
                   className="bg-black border border-white rounded-xl overflow-hidden hover:bg-neutral-900 transition-colors"
                 >
                   {/* Image preview - top half */}
-                  <div className="w-full h-48 bg-neutral-800 overflow-hidden">
+                  <div className="w-full h-32 bg-neutral-800 overflow-hidden">
                     <img
                       src="https://via.placeholder.com/400x300"
                       alt={link.title}
@@ -242,7 +242,7 @@ export function DashboardScreen({ user }) {
                   </div>
 
                   {/* Card Content - bottom half */}
-                  <div className="p-5">
+                  <div className="p-4">
                     <div className="mb-4">
                       <h3 className="text-white font-bold text-lg mb-2 line-clamp-2">
                         {link.title}
