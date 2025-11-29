@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase-config'
-import { collection, getDocs, deleteDoc, doc, writeBatch } from 'firebase/firestore'
+import { collection, getDocs, deleteDoc, doc, writeBatch, updateDoc } from 'firebase/firestore'
 
 /**
  * Load all links from Firestore for a specific user
@@ -76,4 +76,23 @@ export async function deleteMultipleLinks(userId, linkIds) {
 
     await batch.commit()
   }
+}
+
+/**
+ * Toggle archive status of a link
+ * @param {string} userId - The user's UID
+ * @param {string} linkId - The Firestore document ID of the link
+ * @param {boolean} archived - New archive status
+ * @returns {Promise<void>}
+ * @throws {Error} If update fails
+ */
+export async function toggleArchiveStatus(userId, linkId, archived) {
+  if (!userId) {
+    throw new Error('User not authenticated')
+  }
+
+  const linkRef = doc(db, 'users', userId, 'links', linkId)
+  await updateDoc(linkRef, {
+    archived: archived
+  })
 }

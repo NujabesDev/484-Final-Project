@@ -3,6 +3,7 @@ import { signOut } from '@/lib/auth'
 import {
   loadLinksFromFirestore,
   deleteLinkFromFirestore,
+  toggleArchiveStatus,
 } from '@/lib/firestore-service'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
@@ -15,6 +16,7 @@ export function DashboardScreen({ user }) {
   const [displayedTitle, setDisplayedTitle] = useState('')
   const [expandedCards, setExpandedCards] = useState(new Set())
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
   const fullTitle = 'Read Later Randomly'
 
   useEffect(() => {
@@ -87,6 +89,26 @@ export function DashboardScreen({ user }) {
     toast.success('Link copied to clipboard')
   }
 
+  const handleArchive = async (linkId) => {
+    try {
+      const link = links.find(l => l.id === linkId)
+      const newArchivedStatus = !link.archived
+
+      // Update in Firestore
+      await toggleArchiveStatus(user.uid, linkId, newArchivedStatus)
+
+      // Update local state
+      setLinks((prev) => prev.map(l =>
+        l.id === linkId ? { ...l, archived: newArchivedStatus } : l
+      ))
+
+      toast.success(newArchivedStatus ? 'Link archived' : 'Link unarchived')
+    } catch (error) {
+      console.error('Error archiving link:', error)
+      toast.error('Failed to archive link')
+    }
+  }
+
   const toggleExpanded = (linkId) => {
     setExpandedCards((prev) => {
       const newSet = new Set(prev)
@@ -129,11 +151,15 @@ export function DashboardScreen({ user }) {
   }
 
   const filteredLinks = links.filter((link) => {
+    // Filter by archive status based on current view
+    const matchesArchiveStatus = showArchived ? link.archived === true : !link.archived
+
+    // Filter by search query
     const query = searchQuery.toLowerCase()
-    return (
-      link.title.toLowerCase().includes(query) ||
+    const matchesSearch = link.title.toLowerCase().includes(query) ||
       link.url.toLowerCase().includes(query)
-    )
+
+    return matchesArchiveStatus && matchesSearch
   })
 
   return (
@@ -210,7 +236,9 @@ export function DashboardScreen({ user }) {
           <div className="mb-8">
             <div className="flex items-center gap-6 mb-13">
               {/* Left - Title */}
-              <h2 className="text-4xl text-white font-medium">Saved Links</h2>
+              <h2 className="text-4xl text-white font-medium">
+                {showArchived ? 'Archived Links' : 'Saved Links'}
+              </h2>
 
               {/* Search bar - reduced width */}
               <div className="relative flex-1 max-w-xl">
@@ -237,11 +265,18 @@ export function DashboardScreen({ user }) {
               </button>
 
               {/* Archive button */}
-              <button className="px-8 py-3 bg-transparent text-white rounded-full border border-white hover:bg-white hover:text-black transition-colors font-medium flex items-center gap-2">
+              <button
+                onClick={() => setShowArchived(!showArchived)}
+                className={`px-8 py-3 rounded-full border border-white transition-colors font-medium flex items-center gap-2 ${
+                  showArchived
+                    ? 'bg-white text-black'
+                    : 'bg-transparent text-white hover:bg-white hover:text-black'
+                }`}
+              >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                 </svg>
-                Archive
+                {showArchived ? 'Show Saved' : 'Archive'}
               </button>
             </div>
 
@@ -268,6 +303,8 @@ export function DashboardScreen({ user }) {
               <p className="text-white text-lg">
                 {searchQuery
                   ? 'No links match your search'
+                  : showArchived
+                  ? 'No archived links yet. Archive links to see them here!'
                   : 'No links saved yet. Start saving from the extension!'}
               </p>
             </div>
@@ -280,8 +317,19 @@ export function DashboardScreen({ user }) {
                 return (
                   <div
                     key={link.id}
-                    className="bg-black border border-white rounded-xl overflow-hidden hover:bg-neutral-900 transition-colors h-[320px] flex flex-col"
+                    className="bg-black border border-white rounded-xl overflow-hidden hover:bg-neutral-900 transition-colors h-[320px] flex flex-col relative"
                   >
+                    {/* Archive Icon - Top Left */}
+                    <button
+                      onClick={() => handleArchive(link.id)}
+                      className="absolute top-2 left-2 z-10 p-2 bg-black/70 hover:bg-black border border-white rounded-lg transition-colors group"
+                      title={link.archived ? 'Unarchive' : 'Archive'}
+                    >
+                      <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                      </svg>
+                    </button>
+
                     {/* Image preview - FIXED */}
                     <div className="w-full h-40 bg-neutral-900 overflow-hidden flex items-center justify-center flex-shrink-0">
                       {link.thumbnail ? (
