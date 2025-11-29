@@ -506,7 +506,7 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
               {/* Right - Controls */}
               <div className="flex items-center gap-4 flex-1">
                 {/* Search bar */}
-                <div className="relative flex-1">
+                <div className="relative flex-1 max-w-2xl">
                   <input
                     type="text"
                     placeholder=""
