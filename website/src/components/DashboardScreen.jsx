@@ -14,6 +14,7 @@ export function DashboardScreen({ user }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [displayedTitle, setDisplayedTitle] = useState('')
   const [expandedCards, setExpandedCards] = useState(new Set())
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const fullTitle = 'Read Later Randomly'
 
   useEffect(() => {
@@ -48,6 +49,18 @@ export function DashboardScreen({ user }) {
 
     return () => clearInterval(interval)
   }, [])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showProfileDropdown && !event.target.closest('.profile-dropdown-container')) {
+        setShowProfileDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showProfileDropdown])
 
   const handleSignOut = async () => {
     try {
@@ -128,30 +141,50 @@ export function DashboardScreen({ user }) {
       {/* Black top bar - rounded */}
       <div className="w-full bg-black px-8 py-8 rounded-3xl">
         <div className="max-w-7xl mx-auto flex items-center justify-between relative">
-          {/* Left - Profile (smaller) */}
+          {/* Left - Profile with dropdown */}
           {user && (
-            <div className="flex items-center gap-2">
-              <img
-                src={user.photoURL || 'https://via.placeholder.com/48'}
-                alt="Profile"
-                className="w-10 h-10 rounded-full"
-              />
-              <div>
-                <p className="text-white font-medium text-sm">
-                  {user.displayName || 'User'}
-                </p>
-                <p className="text-neutral-400 text-xs">{user.email}</p>
+            <div className="relative profile-dropdown-container">
+              <div
+                className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+              >
+                <img
+                  src={user.photoURL || 'https://via.placeholder.com/48'}
+                  alt="Profile"
+                  className="w-10 h-10 rounded-full"
+                />
+                <div>
+                  <p className="text-white font-medium text-sm">
+                    {user.displayName || 'User'}
+                  </p>
+                  <p className="text-neutral-400 text-xs">{user.email}</p>
+                </div>
               </div>
+
+              {/* Dropdown Menu */}
+              {showProfileDropdown && (
+                <div className="absolute top-full left-0 mt-2 bg-neutral-900 border border-white rounded-lg shadow-lg overflow-hidden z-50">
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false)
+                      handleSignOut()
+                    }}
+                    className="w-full px-6 py-3 text-left text-white hover:bg-neutral-800 transition-colors text-sm font-medium whitespace-nowrap"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
           {/* Center - Title */}
-          <h1 className="text-white text-4xl font-medium tracking-wide mr-27">
+          <h1 className="text-white text-4xl font-medium tracking-wide">
             {displayedTitle}
             <span className="animate-pulse">|</span>
           </h1>
 
-          {/* Right - Icons and Sign Out */}
+          {/* Right - Icons */}
           <div className="flex items-center gap-4">
             {/* Stats icon */}
             <button className="text-white hover:text-neutral-300 transition-colors">
@@ -165,14 +198,6 @@ export function DashboardScreen({ user }) {
               <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-            </button>
-
-            {/* Sign Out button */}
-            <button
-              onClick={handleSignOut}
-              className="px-6 py-2 bg-transparent border border-white text-white rounded-full hover:bg-white hover:text-black transition-colors font-medium text-sm"
-            >
-              Sign Out
             </button>
           </div>
         </div>
