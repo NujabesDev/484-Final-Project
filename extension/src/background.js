@@ -4,6 +4,7 @@ import { initializeAuth, indexedDBLocalPersistence, signInWithCredential, Google
 import { getFirestore, onSnapshot, collection } from 'firebase/firestore';
 import { buildAuthUrl } from './config.js';
 import { loadLinksFromFirestore, saveLinkToFirestore, deleteLinkFromFirestore } from './services/firestore.js';
+import { isRedditPostUrl, scrapeRedditThumbnail } from './services/reddit-scraper.js';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -244,8 +245,20 @@ async function handleSaveLink(message, sendResponse) {
       return;
     }
 
+    // Scrape Reddit thumbnail if this is a Reddit post
+    let thumbnail = null;
+    if (isRedditPostUrl(url)) {
+      console.log('Detected Reddit post, scraping thumbnail...');
+      thumbnail = await scrapeRedditThumbnail(url);
+      if (thumbnail) {
+        console.log('Reddit thumbnail scraped:', thumbnail);
+      } else {
+        console.log('No thumbnail found for Reddit post');
+      }
+    }
+
     // Save to Firestore (waits for confirmation, includes duplicate check as safety net)
-    const newLink = await saveLinkToFirestore(db, auth.currentUser.uid, url, title);
+    const newLink = await saveLinkToFirestore(db, auth.currentUser.uid, url, title, thumbnail);
 
     // Update cache after successful Firestore save
     // onSnapshot will also update cache, but this ensures immediate popup feedback

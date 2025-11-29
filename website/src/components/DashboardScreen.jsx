@@ -233,12 +233,24 @@ export function DashboardScreen({ user }) {
                   className="bg-black border border-white rounded-xl overflow-hidden hover:bg-neutral-900 transition-colors"
                 >
                   {/* Image preview - top half */}
-                  <div className="w-full h-32 bg-neutral-800 overflow-hidden">
-                    <img
-                      src="https://via.placeholder.com/400x300"
-                      alt={link.title}
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-full h-32 bg-neutral-800 overflow-hidden flex items-center justify-center">
+                    {link.thumbnail ? (
+                      <img
+                        src={link.thumbnail}
+                        alt={link.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to placeholder if thumbnail fails to load
+                          e.target.src = "https://via.placeholder.com/400x300?text=No+Preview"
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-neutral-800">
+                        <svg className="w-12 h-12 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
 
                   {/* Card Content - bottom half */}
