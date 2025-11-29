@@ -497,30 +497,32 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
         <div className="max-w-7xl mx-auto">
           {/* Saved Links section */}
           <div className="mb-8">
-            <div className="flex items-center gap-6 mb-13">
+            <div className="flex items-center justify-between mb-13">
               {/* Left - Title */}
               <h2 className="text-4xl text-white font-medium">
                 {showArchived ? 'Archived Links' : 'Saved Links'}
               </h2>
 
-              {/* Search bar - with smooth expansion */}
-              <div className={`relative transition-all duration-300 ${searchFocused || searchQuery ? 'flex-1 max-w-xl' : 'w-48'}`}>
-                <input
-                  type="text"
-                  placeholder=""
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setSearchFocused(false)}
-                  className="w-full pl-12 pr-6 py-3 bg-black text-white rounded-full border border-white focus:outline-none placeholder-neutral-500 transition-all duration-300"
-                />
-                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6" fill="white" viewBox="0 0 24 24">
-                  <path d="M21.71 20.29l-5.4-5.4a8 8 0 10-1.42 1.42l5.4 5.4a1 1 0 001.42 0 1 1 0 000-1.42zM4 10a6 6 0 116 6 6 6 0 01-6-6z" />
-                </svg>
-              </div>
+              {/* Right - Controls */}
+              <div className="flex items-center gap-4">
+                {/* Search bar - with smooth expansion */}
+                <div className={`relative transition-all duration-300 ${searchFocused || searchQuery ? 'w-80' : 'w-48'}`}>
+                  <input
+                    type="text"
+                    placeholder=""
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setSearchFocused(true)}
+                    onBlur={() => setSearchFocused(false)}
+                    className="w-full pl-12 pr-6 py-3 bg-black text-white rounded-full border border-white focus:outline-none placeholder-neutral-500 transition-all duration-300"
+                  />
+                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6" fill="white" viewBox="0 0 24 24">
+                    <path d="M21.71 20.29l-5.4-5.4a8 8 0 10-1.42 1.42l5.4 5.4a1 1 0 001.42 0 1 1 0 000-1.42zM4 10a6 6 0 116 6 6 6 0 01-6-6z" />
+                  </svg>
+                </div>
 
-              {/* Sort button with dropdown */}
-              <div className="relative sort-dropdown-container">
+                {/* Sort button with dropdown */}
+                <div className="relative sort-dropdown-container">
                 <button
                   onClick={() => setShowSortDropdown(!showSortDropdown)}
                   className="px-8 py-3 bg-transparent text-white rounded-full border border-white hover:bg-white hover:text-black transition-colors font-medium"
@@ -750,20 +752,21 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
                 )}
               </div>
 
-              {/* Archive button */}
-              <button
-                onClick={() => setShowArchived(!showArchived)}
-                className={`px-8 py-3 rounded-full border border-white transition-colors font-medium flex items-center gap-2 ${
-                  showArchived
-                    ? 'bg-white text-black'
-                    : 'bg-transparent text-white hover:bg-white hover:text-black'
-                }`}
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                </svg>
-                {showArchived ? 'Show Saved' : 'Archive'}
-              </button>
+                {/* Archive button */}
+                <button
+                  onClick={() => setShowArchived(!showArchived)}
+                  className={`px-8 py-3 rounded-full border border-white transition-colors font-medium flex items-center gap-2 ${
+                    showArchived
+                      ? 'bg-white text-black'
+                      : 'bg-transparent text-white hover:bg-white hover:text-black'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                  </svg>
+                  {showArchived ? 'Show Saved' : 'Archive'}
+                </button>
+              </div>
             </div>
 
             {/* Horizontal line */}
