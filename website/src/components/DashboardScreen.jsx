@@ -13,6 +13,7 @@ export function DashboardScreen({ user }) {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [displayedTitle, setDisplayedTitle] = useState('')
+  const [expandedCards, setExpandedCards] = useState(new Set())
   const fullTitle = 'Read Later Randomly'
 
   useEffect(() => {
@@ -71,6 +72,18 @@ export function DashboardScreen({ user }) {
   const handleCopy = (url) => {
     navigator.clipboard.writeText(url)
     toast.success('Link copied to clipboard')
+  }
+
+  const toggleExpanded = (linkId) => {
+    setExpandedCards((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(linkId)) {
+        newSet.delete(linkId)
+      } else {
+        newSet.add(linkId)
+      }
+      return newSet
+    })
   }
 
   const getDomain = (url) => {
@@ -227,70 +240,89 @@ export function DashboardScreen({ user }) {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredLinks.map((link) => (
-                <div
-                  key={link.id}
-                  className="bg-black border border-white rounded-xl overflow-hidden hover:bg-neutral-900 transition-colors"
-                >
-                  {/* Image preview - top half */}
-                  <div className="w-full h-32 bg-neutral-800 overflow-hidden flex items-center justify-center">
-                    {link.thumbnail ? (
-                      <img
-                        src={link.thumbnail}
-                        alt={link.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          // Fallback to placeholder if thumbnail fails to load
-                          e.target.src = "https://via.placeholder.com/400x300?text=No+Preview"
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-neutral-800">
-                        <svg className="w-12 h-12 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
+              {filteredLinks.map((link) => {
+                const isExpanded = expandedCards.has(link.id)
+                const titleTooLong = link.title.length > 80
+
+                return (
+                  <div
+                    key={link.id}
+                    className="bg-black border border-white rounded-xl overflow-hidden hover:bg-neutral-900 transition-colors h-[400px] flex flex-col"
+                  >
+                    {/* Image preview - fixed height */}
+                    <div className="w-full h-40 bg-neutral-900 overflow-hidden flex items-center justify-center flex-shrink-0">
+                      {link.thumbnail ? (
+                        <img
+                          src={link.thumbnail}
+                          alt={link.title}
+                          className="max-w-full max-h-full object-contain"
+                          onError={(e) => {
+                            // Fallback to placeholder if thumbnail fails to load
+                            e.target.src = "https://via.placeholder.com/400x300?text=No+Preview"
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-neutral-800">
+                          <svg className="w-12 h-12 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Card Content - flexible space */}
+                    <div className="p-4 flex-1 flex flex-col overflow-hidden">
+                      <div className="flex-1 overflow-hidden">
+                        <h3 className="text-white font-bold text-lg mb-2">
+                          {isExpanded || !titleTooLong ? (
+                            link.title
+                          ) : (
+                            <>
+                              {link.title.substring(0, 80)}...
+                            </>
+                          )}
+                        </h3>
+                        {titleTooLong && (
+                          <button
+                            onClick={() => toggleExpanded(link.id)}
+                            className="text-neutral-400 hover:text-white text-xs mb-2 underline"
+                          >
+                            {isExpanded ? 'See less' : 'See more'}
+                          </button>
+                        )}
+                        <p className="text-neutral-400 text-sm mb-1">
+                          {getDomain(link.url)}
+                        </p>
+                        <p className="text-neutral-500 text-xs">
+                          {getTimeAgo(link.createdAt)}
+                        </p>
                       </div>
-                    )}
-                  </div>
 
-                  {/* Card Content - bottom half */}
-                  <div className="p-4">
-                    <div className="mb-4">
-                      <h3 className="text-white font-bold text-lg mb-2 line-clamp-2">
-                        {link.title}
-                      </h3>
-                      <p className="text-neutral-400 text-sm mb-1">
-                        {getDomain(link.url)}
-                      </p>
-                      <p className="text-neutral-500 text-xs">
-                        {getTimeAgo(link.createdAt)}
-                      </p>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleCopy(link.url)}
-                        className="flex-1 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors text-sm font-medium border border-white"
-                      >
-                        Copy
-                      </button>
-                      <button
-                        onClick={() => handleOpen(link.url, link.id)}
-                        className="flex-1 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors text-sm font-medium border border-white"
-                      >
-                        Open
-                      </button>
-                      <button
-                        onClick={() => handleDelete(link.id)}
-                        className="flex-1 px-3 py-2 bg-red-900/50 hover:bg-red-900/70 text-red-400 rounded-lg transition-colors text-sm font-medium border border-red-500"
-                      >
-                        Delete
-                      </button>
+                      {/* Action Buttons - fixed at bottom */}
+                      <div className="flex gap-2 mt-4 flex-shrink-0">
+                        <button
+                          onClick={() => handleCopy(link.url)}
+                          className="flex-1 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors text-sm font-medium border border-white"
+                        >
+                          Copy
+                        </button>
+                        <button
+                          onClick={() => handleOpen(link.url, link.id)}
+                          className="flex-1 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors text-sm font-medium border border-white"
+                        >
+                          Open
+                        </button>
+                        <button
+                          onClick={() => handleDelete(link.id)}
+                          className="flex-1 px-3 py-2 bg-red-900/50 hover:bg-red-900/70 text-red-400 rounded-lg transition-colors text-sm font-medium border border-red-500"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
