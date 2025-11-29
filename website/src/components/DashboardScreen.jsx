@@ -23,6 +23,7 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
   const [sortOption, setSortOption] = useState('mostRecent') // default sort option
   const [showFilterDropdown, setShowFilterDropdown] = useState(false)
   const [showHelpPopup, setShowHelpPopup] = useState(false)
+  const [searchFocused, setSearchFocused] = useState(false)
   const [filters, setFilters] = useState({
     domain: 'all',
     dateSaved: 'all',
@@ -137,9 +138,17 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
   }
 
   const handleDelete = async (linkId) => {
-    // TEMPORARY: Just remove from state for testing
-    setLinks((prev) => prev.filter((link) => link.id !== linkId))
-    toast.success('Link deleted')
+    try {
+      // Delete from Firestore
+      await deleteLinkFromFirestore(user.uid, linkId)
+
+      // Remove from state
+      setLinks((prev) => prev.filter((link) => link.id !== linkId))
+      toast.success('Link deleted')
+    } catch (error) {
+      console.error('Error deleting link:', error)
+      toast.error('Failed to delete link')
+    }
   }
 
   const handleOpen = (url, linkId) => {
@@ -494,14 +503,16 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
                 {showArchived ? 'Archived Links' : 'Saved Links'}
               </h2>
 
-              {/* Search bar - reduced width */}
-              <div className="relative flex-1 max-w-xl">
+              {/* Search bar - with smooth expansion */}
+              <div className={`relative transition-all duration-300 ${searchFocused || searchQuery ? 'flex-1 max-w-xl' : 'w-48'}`}>
                 <input
                   type="text"
                   placeholder=""
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-6 py-3 bg-black text-white rounded-full border border-white focus:outline-none placeholder-neutral-500"
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                  className="w-full pl-12 pr-6 py-3 bg-black text-white rounded-full border border-white focus:outline-none placeholder-neutral-500 transition-all duration-300"
                 />
                 <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6" fill="white" viewBox="0 0 24 24">
                   <path d="M21.71 20.29l-5.4-5.4a8 8 0 10-1.42 1.42l5.4 5.4a1 1 0 001.42 0 1 1 0 000-1.42zM4 10a6 6 0 116 6 6 6 0 01-6-6z" />
@@ -854,9 +865,18 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
                         <img
                           src={link.thumbnail}
                           alt={link.title}
-                          className="max-w-full max-h-full object-contain"
+                          className="w-full h-full object-cover"
+                          loading="lazy"
                           onError={(e) => {
-                            e.target.src = "https://via.placeholder.com/400x300?text=No+Preview"
+                            e.target.onerror = null
+                            e.target.style.display = 'none'
+                            e.target.parentElement.innerHTML = `
+                              <div class="w-full h-full flex items-center justify-center bg-neutral-800">
+                                <svg class="w-12 h-12 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                </svg>
+                              </div>
+                            `
                           }}
                         />
                       ) : (
@@ -878,13 +898,13 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
                             {' '}
                             <button
                               onClick={() => toggleExpanded(link.id)}
-                              className="text-neutral-400 hover:text-white text-xs underline whitespace-nowrap"
+                              className="text-neutral-400 hover:text-white text-xs underline whitespace-nowrap inline"
                             >
                               See less
                             </button>
                           </div>
                         ) : (
-                          <div className="text-white font-bold text-base whitespace-nowrap overflow-hidden flex items-center h-6 -ml-3">
+                          <div className="text-white font-bold text-base whitespace-nowrap overflow-hidden flex items-center h-6">
                             <span className="truncate flex-shrink min-w-0">
                               {link.title}
                             </span>
@@ -905,7 +925,7 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
 
                       {/* Metadata - FIXED at bottom */}
                       <div className="flex-shrink-0 mb-2">
-                        <p className="text-neutral-400 text-sm mb-1">
+                        <p className="text-neutral-400 text-sm">
                           {getDomain(link.url)}
                         </p>
                         <div className="flex items-center gap-2">

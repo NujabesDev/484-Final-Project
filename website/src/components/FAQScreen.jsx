@@ -5,7 +5,7 @@ export function FAQScreen({ user, onBack }) {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [displayedTitle, setDisplayedTitle] = useState('')
   const [expandedQuestions, setExpandedQuestions] = useState(new Set())
-  const fullTitle = 'FAQ.'
+  const fullTitle = 'FAQ'
 
   // Typewriter effect for title
   useEffect(() => {
