@@ -208,7 +208,7 @@ export function DashboardScreen({ user }) {
         <div className="max-w-7xl mx-auto">
           {/* Saved Links section */}
           <div className="mb-8">
-            <div className="flex items-center gap-6 mb-8">
+            <div className="flex items-center gap-6 mb-13">
               {/* Left - Title */}
               <h2 className="text-4xl text-white font-medium">Saved Links</h2>
 
