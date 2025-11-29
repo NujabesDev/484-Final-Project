@@ -96,3 +96,26 @@ export async function toggleArchiveStatus(userId, linkId, archived) {
     archived: archived
   })
 }
+
+/**
+ * Update rating for a link
+ * @param {string} userId - The user's UID
+ * @param {string} linkId - The Firestore document ID of the link
+ * @param {number} rating - Rating from 1-5
+ * @returns {Promise<void>}
+ * @throws {Error} If update fails
+ */
+export async function updateLinkRating(userId, linkId, rating) {
+  if (!userId) {
+    throw new Error('User not authenticated')
+  }
+
+  if (rating < 1 || rating > 5) {
+    throw new Error('Rating must be between 1 and 5')
+  }
+
+  const linkRef = doc(db, 'users', userId, 'links', linkId)
+  await updateDoc(linkRef, {
+    rating: rating
+  })
+}

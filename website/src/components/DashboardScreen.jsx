@@ -4,6 +4,7 @@ import {
   loadLinksFromFirestore,
   deleteLinkFromFirestore,
   toggleArchiveStatus,
+  updateLinkRating,
 } from '@/lib/firestore-service'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
@@ -17,6 +18,7 @@ export function DashboardScreen({ user }) {
   const [expandedCards, setExpandedCards] = useState(new Set())
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
+  const [ratingPopupOpen, setRatingPopupOpen] = useState(null)
   const fullTitle = 'Read Later Randomly'
 
   useEffect(() => {
@@ -64,6 +66,18 @@ export function DashboardScreen({ user }) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showProfileDropdown])
 
+  // Close rating popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (ratingPopupOpen && !event.target.closest('.rating-popup-container')) {
+        setRatingPopupOpen(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [ratingPopupOpen])
+
   const handleSignOut = async () => {
     try {
       await signOut()
@@ -106,6 +120,26 @@ export function DashboardScreen({ user }) {
     } catch (error) {
       console.error('Error archiving link:', error)
       toast.error('Failed to archive link')
+    }
+  }
+
+  const handleRating = async (linkId, rating) => {
+    try {
+      // Update in Firestore
+      await updateLinkRating(user.uid, linkId, rating)
+
+      // Update local state
+      setLinks((prev) => prev.map(l =>
+        l.id === linkId ? { ...l, rating } : l
+      ))
+
+      // Close popup
+      setRatingPopupOpen(null)
+
+      toast.success(`Rated ${rating} star${rating > 1 ? 's' : ''}`)
+    } catch (error) {
+      console.error('Error rating link:', error)
+      toast.error('Failed to update rating')
     }
   }
 
@@ -319,16 +353,59 @@ export function DashboardScreen({ user }) {
                     key={link.id}
                     className="bg-black border border-white rounded-xl overflow-hidden hover:bg-neutral-900 transition-colors h-[320px] flex flex-col relative"
                   >
-                    {/* Archive Icon - Top Left */}
-                    <button
-                      onClick={() => handleArchive(link.id)}
-                      className="absolute top-2 left-2 z-10 p-2 bg-black/70 hover:bg-black border border-white rounded-lg transition-colors group"
-                      title={link.archived ? 'Unarchive' : 'Archive'}
-                    >
-                      <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                      </svg>
-                    </button>
+                    {/* Top Left Icons */}
+                    <div className="absolute top-2 left-2 z-10 flex gap-2">
+                      {/* Archive Icon */}
+                      <button
+                        onClick={() => handleArchive(link.id)}
+                        className="p-2 bg-black/70 hover:bg-black border border-white rounded-lg transition-colors group"
+                        title={link.archived ? 'Unarchive' : 'Archive'}
+                      >
+                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                        </svg>
+                      </button>
+
+                      {/* Star Rating Icon */}
+                      <div className="relative rating-popup-container">
+                        <button
+                          onClick={() => setRatingPopupOpen(ratingPopupOpen === link.id ? null : link.id)}
+                          className={`p-2 bg-black/70 hover:bg-black border border-white rounded-lg transition-colors ${link.rating ? 'text-yellow-400' : 'text-white'}`}
+                          title={link.rating ? `Rated ${link.rating} stars` : 'Rate this link'}
+                        >
+                          <svg className="w-4 h-4" fill={link.rating ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                          </svg>
+                        </button>
+
+                        {/* Rating Popup */}
+                        {ratingPopupOpen === link.id && (
+                          <div className="absolute top-full left-0 mt-1 bg-black border border-white rounded-lg shadow-lg p-3 whitespace-nowrap z-20">
+                            <p className="text-white text-xs mb-2 font-medium">Rate this link:</p>
+                            <div className="flex gap-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                  key={star}
+                                  onClick={() => handleRating(link.id, star)}
+                                  className="p-1 hover:scale-110 transition-transform"
+                                  title={`${star} star${star > 1 ? 's' : ''}`}
+                                >
+                                  <svg
+                                    className={`w-5 h-5 ${star <= (link.rating || 0) ? 'text-yellow-400 fill-current' : 'text-white'}`}
+                                    fill={star <= (link.rating || 0) ? 'currentColor' : 'none'}
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                  </svg>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
                     {/* Image preview - FIXED */}
                     <div className="w-full h-40 bg-neutral-900 overflow-hidden flex items-center justify-center flex-shrink-0">
@@ -390,9 +467,27 @@ export function DashboardScreen({ user }) {
                         <p className="text-neutral-400 text-sm mb-1">
                           {getDomain(link.url)}
                         </p>
-                        <p className="text-neutral-500 text-xs">
-                          {getTimeAgo(link.createdAt)}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-neutral-500 text-xs">
+                            {getTimeAgo(link.createdAt)}
+                          </p>
+                          {link.rating && (
+                            <div className="flex items-center gap-0.5">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <svg
+                                  key={star}
+                                  className={`w-3 h-3 ${star <= link.rating ? 'text-yellow-400 fill-current' : 'text-neutral-600'}`}
+                                  fill={star <= link.rating ? 'currentColor' : 'none'}
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={2}
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                </svg>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Buttons - FIXED at bottom */}
