@@ -107,13 +107,13 @@ export function StorageChoiceScreen({ onNext, onChoose, extensionParams }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-8">
-      <div className="max-w-4xl w-full space-y-20">
-        <div className="text-center space-y-10 animate-fade-in-up">
-          <h2 className="text-[15rem] font-serif text-white tracking-tight leading-[1.0] text-balance">
+    <div className="min-h-screen bg-black flex items-center justify-center p-8">
+      <div className="max-w-4xl w-full space-y-12">
+        <div className="text-center space-y-8 animate-fade-in-up">
+          <h2 className="text-8xl font-medium text-white tracking-tight leading-tight text-balance">
             Sign In
           </h2>
-          <p className="text-neutral-500 text-4xl font-light leading-relaxed">
+          <p className="text-neutral-500 text-2xl leading-relaxed">
             Yes, we are forcing you to sign in.
             <br></br>
             Yes, we are sorry.
@@ -121,13 +121,13 @@ export function StorageChoiceScreen({ onNext, onChoose, extensionParams }) {
         </div>
 
         {error && (
-          <div className="text-center text-red-400 text-xl animate-fade-in-up">
+          <div className="text-center text-red-400 text-lg animate-fade-in-up">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="text-center text-green-400 text-xl animate-fade-in-up">
+          <div className="text-center text-green-400 text-lg animate-fade-in-up">
             {success}
           </div>
         )}
@@ -136,10 +136,10 @@ export function StorageChoiceScreen({ onNext, onChoose, extensionParams }) {
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className={`max-w-2xl w-full p-8 bg-white text-black rounded-2xl transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-white/10 flex items-center justify-center gap-6 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${selected === "google" ? "scale-[1.02] shadow-2xl shadow-white/10" : ""
+            className={`max-w-xl w-full p-6 bg-white text-black rounded-2xl transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-white/10 flex items-center justify-center gap-4 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${selected === "google" ? "scale-[1.02] shadow-2xl shadow-white/10" : ""
               }`}
           >
-            <svg className="w-8 h-8" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" viewBox="0 0 24 24">
               <path
                 fill="currentColor"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -157,7 +157,7 @@ export function StorageChoiceScreen({ onNext, onChoose, extensionParams }) {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            <span className="text-2xl font-medium">
+            <span className="text-xl font-medium">
               {loading ? 'Signing in...' : 'Sign in with Google'}
             </span>
           </button>
