@@ -242,7 +242,7 @@ export function DashboardScreen({ user }) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredLinks.map((link) => {
                 const isExpanded = expandedCards.has(link.id)
-                const titleTooLong = link.title.length > 80
+                const titleTooLong = link.title.length > 50
 
                 return (
                   <div
@@ -271,21 +271,23 @@ export function DashboardScreen({ user }) {
                     </div>
 
                     {/* Card Content - flexible space */}
-                    <div className="p-4 flex-1 flex flex-col overflow-hidden">
-                      <div className="flex-1 overflow-hidden">
-                        <h3 className="text-white font-bold text-lg mb-2">
-                          {isExpanded || !titleTooLong ? (
+                    <div className="p-4 flex-1 flex flex-col">
+                      <div className="flex-shrink-0">
+                        <h3 className="text-white font-bold text-lg mb-1 h-14 overflow-hidden">
+                          {isExpanded ? (
                             link.title
-                          ) : (
+                          ) : titleTooLong ? (
                             <>
-                              {link.title.substring(0, 80)}...
+                              {link.title.substring(0, 50)}...
                             </>
+                          ) : (
+                            link.title
                           )}
                         </h3>
                         {titleTooLong && (
                           <button
                             onClick={() => toggleExpanded(link.id)}
-                            className="text-neutral-400 hover:text-white text-xs mb-2 underline"
+                            className="text-neutral-400 hover:text-white text-xs mb-1 underline"
                           >
                             {isExpanded ? 'See less' : 'See more'}
                           </button>
