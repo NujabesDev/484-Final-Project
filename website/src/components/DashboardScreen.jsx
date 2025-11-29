@@ -19,6 +19,8 @@ export function DashboardScreen({ user }) {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
   const [ratingPopupOpen, setRatingPopupOpen] = useState(null)
+  const [showSortDropdown, setShowSortDropdown] = useState(false)
+  const [sortOption, setSortOption] = useState('mostRecent') // default sort option
   const fullTitle = 'Read Later Randomly'
 
   useEffect(() => {
@@ -77,6 +79,18 @@ export function DashboardScreen({ user }) {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [ratingPopupOpen])
+
+  // Close sort dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showSortDropdown && !event.target.closest('.sort-dropdown-container')) {
+        setShowSortDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showSortDropdown])
 
   const handleSignOut = async () => {
     try {
@@ -184,7 +198,28 @@ export function DashboardScreen({ user }) {
     return 'Just now'
   }
 
-  const filteredLinks = links.filter((link) => {
+  const sortLinks = (linksToSort) => {
+    const sorted = [...linksToSort]
+
+    switch (sortOption) {
+      case 'aToZ':
+        return sorted.sort((a, b) => a.title.localeCompare(b.title))
+      case 'zToA':
+        return sorted.sort((a, b) => b.title.localeCompare(a.title))
+      case 'mostRecent':
+        return sorted.sort((a, b) => b.createdAt - a.createdAt)
+      case 'oldest':
+        return sorted.sort((a, b) => a.createdAt - b.createdAt)
+      case 'highestRated':
+        return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      case 'lowestRated':
+        return sorted.sort((a, b) => (a.rating || 0) - (b.rating || 0))
+      default:
+        return sorted
+    }
+  }
+
+  const filteredLinks = sortLinks(links.filter((link) => {
     // Filter by archive status based on current view
     const matchesArchiveStatus = showArchived ? link.archived === true : !link.archived
 
@@ -194,7 +229,7 @@ export function DashboardScreen({ user }) {
       link.url.toLowerCase().includes(query)
 
     return matchesArchiveStatus && matchesSearch
-  })
+  }))
 
   return (
     <div className="min-h-screen bg-black" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
@@ -288,10 +323,87 @@ export function DashboardScreen({ user }) {
                 </svg>
               </div>
 
-              {/* Sort button */}
-              <button className="px-8 py-3 bg-transparent text-white rounded-full border border-white hover:bg-white hover:text-black transition-colors font-medium">
-                Sort
-              </button>
+              {/* Sort button with dropdown */}
+              <div className="relative sort-dropdown-container">
+                <button
+                  onClick={() => setShowSortDropdown(!showSortDropdown)}
+                  className="px-8 py-3 bg-transparent text-white rounded-full border border-white hover:bg-white hover:text-black transition-colors font-medium"
+                >
+                  Sort
+                </button>
+
+                {/* Sort Dropdown Menu */}
+                {showSortDropdown && (
+                  <div className="absolute top-full right-0 mt-2 bg-neutral-900 border border-white rounded-lg shadow-lg overflow-hidden z-50 min-w-[220px]">
+                    <button
+                      onClick={() => {
+                        setSortOption('aToZ')
+                        setShowSortDropdown(false)
+                      }}
+                      className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${
+                        sortOption === 'aToZ' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
+                      }`}
+                    >
+                      A → Z
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortOption('zToA')
+                        setShowSortDropdown(false)
+                      }}
+                      className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${
+                        sortOption === 'zToA' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
+                      }`}
+                    >
+                      Z → A
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortOption('mostRecent')
+                        setShowSortDropdown(false)
+                      }}
+                      className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${
+                        sortOption === 'mostRecent' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
+                      }`}
+                    >
+                      Most recently added
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortOption('oldest')
+                        setShowSortDropdown(false)
+                      }}
+                      className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${
+                        sortOption === 'oldest' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
+                      }`}
+                    >
+                      Oldest first
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortOption('highestRated')
+                        setShowSortDropdown(false)
+                      }}
+                      className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${
+                        sortOption === 'highestRated' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
+                      }`}
+                    >
+                      Highest rated
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortOption('lowestRated')
+                        setShowSortDropdown(false)
+                      }}
+                      className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${
+                        sortOption === 'lowestRated' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
+                      }`}
+                    >
+                      Lowest rated
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* Filter button */}
               <button className="px-8 py-3 bg-transparent text-white rounded-full border border-white hover:bg-white hover:text-black transition-colors font-medium">
