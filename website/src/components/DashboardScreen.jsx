@@ -271,11 +271,11 @@ export function DashboardScreen({ user }) {
 
                     {/* Content wrapper with padding */}
                     <div className="px-4 pt-2 pb-3 flex-1 flex flex-col min-h-0">
-                      {/* Title section - SINGLE LINE ONLY */}
-                      <div className="flex-shrink-0 h-6 mb-0 flex items-center">
+                      {/* Title section - FIXED HEIGHT CONTAINER */}
+                      <div className="flex-shrink-0 overflow-hidden" style={{ maxHeight: isExpanded ? '80px' : '24px' }}>
                         {isExpanded ? (
-                          <div className="text-white font-bold text-base overflow-auto max-h-20">
-                            <span>{link.title}</span>
+                          <div className="text-white font-bold text-base leading-tight overflow-y-auto" style={{ maxHeight: '80px' }}>
+                            {link.title}
                             {' '}
                             <button
                               onClick={() => toggleExpanded(link.id)}
@@ -285,7 +285,7 @@ export function DashboardScreen({ user }) {
                             </button>
                           </div>
                         ) : (
-                          <div className="text-white font-bold text-base whitespace-nowrap overflow-hidden w-full flex items-center">
+                          <div className="text-white font-bold text-base whitespace-nowrap overflow-hidden flex items-center h-6">
                             <span className="truncate flex-shrink min-w-0">
                               {link.title}
                             </span>
