@@ -310,7 +310,7 @@ export function DashboardScreen({ user }) {
                             </button>
                           </div>
                         ) : (
-                          <div className="text-white font-bold text-base whitespace-nowrap overflow-hidden flex items-center h-6 -ml-2">
+                          <div className="text-white font-bold text-base whitespace-nowrap overflow-hidden flex items-center h-6 -ml-3">
                             <span className="truncate flex-shrink min-w-0">
                               {link.title}
                             </span>
