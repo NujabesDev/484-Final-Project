@@ -19,10 +19,7 @@ export async function loadLinksFromFirestore(userId) {
     querySnapshot.forEach((doc) => {
       links.push({
         id: doc.id,
-        url: doc.data().url,
-        title: doc.data().title,
-        timestamp: doc.data().createdAt,
-        createdAt: doc.data().createdAt
+        ...doc.data()
       })
     })
 
