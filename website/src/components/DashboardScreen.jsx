@@ -137,7 +137,7 @@ export function DashboardScreen({ user }) {
   })
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
       {/* Black top bar - rounded */}
       <div className="w-full bg-black px-8 py-8 rounded-3xl">
         <div className="max-w-7xl mx-auto flex items-center justify-between relative">
