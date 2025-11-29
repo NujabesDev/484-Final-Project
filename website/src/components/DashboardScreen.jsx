@@ -242,7 +242,7 @@ export function DashboardScreen({ user }) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredLinks.map((link) => {
                 const isExpanded = expandedCards.has(link.id)
-                const titleTooLong = link.title.length > 50
+                const titleTooLong = link.title.length > 60
 
                 return (
                   <div
@@ -270,28 +270,29 @@ export function DashboardScreen({ user }) {
                       )}
                     </div>
 
-                    {/* Card Content - flexible space */}
-                    <div className="p-4 flex-1 flex flex-col">
-                      <div className="flex-shrink-0">
-                        <h3 className="text-white font-bold text-lg mb-1 h-14 overflow-hidden">
-                          {isExpanded ? (
-                            link.title
-                          ) : titleTooLong ? (
-                            <>
-                              {link.title.substring(0, 50)}...
-                            </>
-                          ) : (
-                            link.title
-                          )}
+                    {/* Card Content - fixed layout */}
+                    <div className="p-4 flex-1 flex flex-col min-h-0">
+                      {/* Title - fixed height, never expands */}
+                      <div className="flex-shrink-0 h-12 mb-1">
+                        <h3 className={`text-white font-bold text-base leading-tight ${!isExpanded && titleTooLong ? 'line-clamp-2' : ''} overflow-hidden`}>
+                          {isExpanded ? link.title : (titleTooLong ? link.title.substring(0, 60) + '...' : link.title)}
                         </h3>
+                      </div>
+
+                      {/* See more button - fixed height slot */}
+                      <div className="flex-shrink-0 h-4 mb-1">
                         {titleTooLong && (
                           <button
                             onClick={() => toggleExpanded(link.id)}
-                            className="text-neutral-400 hover:text-white text-xs mb-1 underline"
+                            className="text-neutral-400 hover:text-white text-xs underline"
                           >
                             {isExpanded ? 'See less' : 'See more'}
                           </button>
                         )}
+                      </div>
+
+                      {/* Metadata - locked position */}
+                      <div className="flex-shrink-0 mb-2">
                         <p className="text-neutral-400 text-sm mb-1">
                           {getDomain(link.url)}
                         </p>
@@ -300,8 +301,11 @@ export function DashboardScreen({ user }) {
                         </p>
                       </div>
 
-                      {/* Action Buttons - fixed at bottom */}
-                      <div className="flex gap-2 mt-2 flex-shrink-0">
+                      {/* Spacer to push buttons to bottom */}
+                      <div className="flex-1"></div>
+
+                      {/* Action Buttons - always at bottom */}
+                      <div className="flex gap-2 flex-shrink-0">
                         <button
                           onClick={() => handleCopy(link.url)}
                           className="flex-1 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors text-sm font-medium border border-white"
