@@ -21,6 +21,13 @@ export function DashboardScreen({ user }) {
   const [ratingPopupOpen, setRatingPopupOpen] = useState(null)
   const [showSortDropdown, setShowSortDropdown] = useState(false)
   const [sortOption, setSortOption] = useState('mostRecent') // default sort option
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false)
+  const [filters, setFilters] = useState({
+    domain: 'all',
+    dateSaved: 'all',
+    starRating: 'all',
+    topic: 'all'
+  })
   const fullTitle = 'Read Later Randomly'
 
   useEffect(() => {
@@ -91,6 +98,18 @@ export function DashboardScreen({ user }) {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showSortDropdown])
+
+  // Close filter dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showFilterDropdown && !event.target.closest('.filter-dropdown-container')) {
+        setShowFilterDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showFilterDropdown])
 
   const handleSignOut = async () => {
     try {
@@ -198,6 +217,118 @@ export function DashboardScreen({ user }) {
     return 'Just now'
   }
 
+  const classifyTopic = (link) => {
+    const title = link.title.toLowerCase()
+    const url = link.url.toLowerCase()
+
+    // Tech keywords
+    if (title.match(/\b(code|programming|software|developer|tech|computer|ai|machine learning|javascript|python|react|github|api|database|server|web|app|mobile|ios|android|cloud|aws|google cloud|azure|docker|kubernetes|linux|windows|mac|crypto|blockchain|bitcoin|ethereum)\b/) ||
+        url.match(/stackoverflow|github|dev\.to|medium\.com\/.*tech|techcrunch|arstechnica|theverge|wired\.com|cnet\.com/)) {
+      return 'Tech'
+    }
+
+    // Finance keywords
+    if (title.match(/\b(stock|invest|trading|finance|money|bank|crypto|bitcoin|ethereum|portfolio|401k|retirement|savings|mortgage|loan|credit|debt|tax|budget|wealth|market|economy|dividend|bond|forex)\b/) ||
+        url.match(/bloomberg|cnbc|marketwatch|investopedia|wallstreetjournal|finance\.yahoo|nerdwallet|mint\.com/)) {
+      return 'Finance'
+    }
+
+    // Cooking keywords
+    if (title.match(/\b(recipe|cook|bake|food|chef|kitchen|meal|dish|ingredient|cuisine|diet|nutrition|restaurant|dessert|breakfast|lunch|dinner|appetizer|sauce|spice|oven|grill|fry|boil|healthy eating)\b/) ||
+        url.match(/allrecipes|foodnetwork|epicurious|seriouseats|bonappetit|tasty\.co|delish\.com|food52/)) {
+      return 'Cooking'
+    }
+
+    // Entertainment keywords
+    if (title.match(/\b(movie|film|tv show|series|netflix|hulu|disney|hbo|streaming|music|song|album|artist|band|concert|game|gaming|playstation|xbox|nintendo|esports|anime|manga|comic|marvel|dc|star wars|lord of the rings|podcast|youtube|twitch|celebrity|actor|actress)\b/) ||
+        url.match(/imdb|rottentomatoes|netflix|hulu|spotify|apple music|twitch\.tv|ign\.com|gamespot|polygon\.com|kotaku|entertainment\.com/)) {
+      return 'Entertainment'
+    }
+
+    // School/Work keywords
+    if (title.match(/\b(essay|research|study|homework|assignment|course|class|lecture|professor|student|education|university|college|school|degree|certification|exam|test|project|paper|thesis|dissertation|career|job|resume|interview|linkedin|professional|office|meeting|presentation|deadline|workload)\b/) ||
+        url.match(/coursera|udemy|khanacademy|edx|scholar\.google|researchgate|linkedin\.com|indeed\.com|glassdoor/)) {
+      return 'School/Work'
+    }
+
+    return 'Other'
+  }
+
+  const checkDateFilter = (timestamp, filter) => {
+    if (filter === 'all') return true
+
+    const now = Date.now()
+    const diff = now - timestamp
+    const hours = diff / (1000 * 60 * 60)
+    const days = hours / 24
+    const weeks = days / 7
+
+    switch (filter) {
+      case 'today':
+        return hours < 24
+      case 'thisWeek':
+        return days < 7
+      case 'thisMonth':
+        return days < 30
+      case 'older':
+        return days >= 30
+      default:
+        return true
+    }
+  }
+
+  const applyFilters = (link) => {
+    // Domain filter
+    if (filters.domain !== 'all') {
+      const url = link.url.toLowerCase()
+      if (filters.domain === 'reddit' && !url.includes('reddit.com')) return false
+      if (filters.domain === 'youtube' && !url.includes('youtube.com')) return false
+      if (filters.domain === 'articles' && (url.includes('reddit.com') || url.includes('youtube.com'))) return false
+    }
+
+    // Date filter
+    if (!checkDateFilter(link.createdAt, filters.dateSaved)) return false
+
+    // Star Rating filter
+    if (filters.starRating !== 'all') {
+      const rating = link.rating || 0
+      if (filters.starRating === '5stars' && rating !== 5) return false
+      if (filters.starRating === '4plus' && rating < 4) return false
+      if (filters.starRating === 'unrated' && rating > 0) return false
+    }
+
+    // Topic filter
+    if (filters.topic !== 'all') {
+      const topic = classifyTopic(link)
+      if (topic !== filters.topic) return false
+    }
+
+    return true
+  }
+
+  const updateFilter = (category, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [category]: value
+    }))
+  }
+
+  const clearAllFilters = () => {
+    setFilters({
+      domain: 'all',
+      dateSaved: 'all',
+      starRating: 'all',
+      topic: 'all'
+    })
+  }
+
+  const hasActiveFilters = () => {
+    return filters.domain !== 'all' ||
+           filters.dateSaved !== 'all' ||
+           filters.starRating !== 'all' ||
+           filters.topic !== 'all'
+  }
+
   const sortLinks = (linksToSort) => {
     const sorted = [...linksToSort]
 
@@ -228,7 +359,10 @@ export function DashboardScreen({ user }) {
     const matchesSearch = link.title.toLowerCase().includes(query) ||
       link.url.toLowerCase().includes(query)
 
-    return matchesArchiveStatus && matchesSearch
+    // Apply custom filters
+    const matchesFilters = applyFilters(link)
+
+    return matchesArchiveStatus && matchesSearch && matchesFilters
   }))
 
   return (
@@ -405,10 +539,151 @@ export function DashboardScreen({ user }) {
                 )}
               </div>
 
-              {/* Filter button */}
-              <button className="px-8 py-3 bg-transparent text-white rounded-full border border-white hover:bg-white hover:text-black transition-colors font-medium">
-                Filter
-              </button>
+              {/* Filter button with dropdown */}
+              <div className="relative filter-dropdown-container">
+                <button
+                  onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                  className={`px-8 py-3 rounded-full border border-white transition-colors font-medium flex items-center gap-2 ${
+                    hasActiveFilters()
+                      ? 'bg-white text-black'
+                      : 'bg-transparent text-white hover:bg-white hover:text-black'
+                  }`}
+                >
+                  Filter
+                  {hasActiveFilters() && (
+                    <span className="w-2 h-2 bg-black rounded-full"></span>
+                  )}
+                </button>
+
+                {/* Filter Dropdown Menu */}
+                {showFilterDropdown && (
+                  <div className="absolute top-full right-0 mt-2 bg-neutral-900 border border-white rounded-lg shadow-lg overflow-hidden z-50 w-[320px]">
+                    {/* Header with Clear All */}
+                    <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-700">
+                      <span className="text-white font-semibold text-sm">Filters</span>
+                      {hasActiveFilters() && (
+                        <button
+                          onClick={clearAllFilters}
+                          className="text-xs text-neutral-400 hover:text-white transition-colors"
+                        >
+                          Clear All
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Domain Filter */}
+                    <div className="border-b border-neutral-700">
+                      <div className="px-6 py-2 bg-neutral-800">
+                        <span className="text-white font-medium text-xs">Domain</span>
+                      </div>
+                      <div className="px-4 py-2">
+                        {[
+                          { value: 'all', label: 'All Domains' },
+                          { value: 'reddit', label: 'Reddit' },
+                          { value: 'youtube', label: 'YouTube' },
+                          { value: 'articles', label: 'Articles' }
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => updateFilter('domain', option.value)}
+                            className={`w-full px-4 py-2 text-left text-sm rounded transition-colors ${
+                              filters.domain === option.value
+                                ? 'bg-neutral-700 text-white font-medium'
+                                : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Date Saved Filter */}
+                    <div className="border-b border-neutral-700">
+                      <div className="px-6 py-2 bg-neutral-800">
+                        <span className="text-white font-medium text-xs">Date Saved</span>
+                      </div>
+                      <div className="px-4 py-2">
+                        {[
+                          { value: 'all', label: 'All Dates' },
+                          { value: 'today', label: 'Today' },
+                          { value: 'thisWeek', label: 'This Week' },
+                          { value: 'thisMonth', label: 'This Month' },
+                          { value: 'older', label: 'Older' }
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => updateFilter('dateSaved', option.value)}
+                            className={`w-full px-4 py-2 text-left text-sm rounded transition-colors ${
+                              filters.dateSaved === option.value
+                                ? 'bg-neutral-700 text-white font-medium'
+                                : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Star Rating Filter */}
+                    <div className="border-b border-neutral-700">
+                      <div className="px-6 py-2 bg-neutral-800">
+                        <span className="text-white font-medium text-xs">Star Rating</span>
+                      </div>
+                      <div className="px-4 py-2">
+                        {[
+                          { value: 'all', label: 'All Ratings' },
+                          { value: '5stars', label: '5 Stars' },
+                          { value: '4plus', label: '4+ Stars' },
+                          { value: 'unrated', label: 'Unrated' }
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => updateFilter('starRating', option.value)}
+                            className={`w-full px-4 py-2 text-left text-sm rounded transition-colors ${
+                              filters.starRating === option.value
+                                ? 'bg-neutral-700 text-white font-medium'
+                                : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Topic Filter */}
+                    <div>
+                      <div className="px-6 py-2 bg-neutral-800">
+                        <span className="text-white font-medium text-xs">Topic</span>
+                      </div>
+                      <div className="px-4 py-2">
+                        {[
+                          { value: 'all', label: 'All Topics' },
+                          { value: 'Tech', label: 'Tech' },
+                          { value: 'Finance', label: 'Finance' },
+                          { value: 'Cooking', label: 'Cooking' },
+                          { value: 'Entertainment', label: 'Entertainment' },
+                          { value: 'School/Work', label: 'School/Work' }
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => updateFilter('topic', option.value)}
+                            className={`w-full px-4 py-2 text-left text-sm rounded transition-colors ${
+                              filters.topic === option.value
+                                ? 'bg-neutral-700 text-white font-medium'
+                                : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Archive button */}
               <button
