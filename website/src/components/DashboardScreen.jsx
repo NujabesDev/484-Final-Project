@@ -291,10 +291,13 @@ export function DashboardScreen({ user }) {
 
     // Star Rating filter
     if (filters.starRating !== 'all') {
-      const rating = link.rating || 0
+      const rating = link.rating || null
+      if (filters.starRating === 'unrated' && rating !== null) return false
       if (filters.starRating === '5stars' && rating !== 5) return false
-      if (filters.starRating === '4plus' && rating < 4) return false
-      if (filters.starRating === 'unrated' && rating > 0) return false
+      if (filters.starRating === '4stars' && rating !== 4) return false
+      if (filters.starRating === '3stars' && rating !== 3) return false
+      if (filters.starRating === '2stars' && rating !== 2) return false
+      if (filters.starRating === '1star' && rating !== 1) return false
     }
 
     // Topic filter
@@ -634,8 +637,11 @@ export function DashboardScreen({ user }) {
                       <div className="px-4 py-2">
                         {[
                           { value: 'all', label: 'All Ratings' },
-                          { value: '5stars', label: '5 Stars' },
-                          { value: '4plus', label: '4+ Stars' },
+                          { value: '5stars', label: '5 stars' },
+                          { value: '4stars', label: '4 stars' },
+                          { value: '3stars', label: '3 stars' },
+                          { value: '2stars', label: '2 stars' },
+                          { value: '1star', label: '1 star' },
                           { value: 'unrated', label: 'Unrated' }
                         ].map((option) => (
                           <button
