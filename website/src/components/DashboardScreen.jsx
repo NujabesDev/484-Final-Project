@@ -270,24 +270,43 @@ export function DashboardScreen({ user }) {
                     </div>
 
                     {/* Content wrapper with padding */}
-                    <div className="px-4 pt-3 pb-4 flex-1 flex flex-col min-h-0">
-                      {/* Title section - FLEXIBLE (only part that shrinks) */}
-                      <div className="flex-1 min-h-0 overflow-hidden mb-2">
-                        <h3 className="text-white font-bold text-base leading-tight mb-1 line-clamp-2">
-                          {isExpanded ? link.title : (titleTooLong ? link.title.substring(0, 60) + '...' : link.title)}
-                        </h3>
-                        {titleTooLong && (
-                          <button
-                            onClick={() => toggleExpanded(link.id)}
-                            className="text-neutral-400 hover:text-white text-xs underline"
-                          >
-                            {isExpanded ? 'See less' : 'See more'}
-                          </button>
-                        )}
+                    <div className="px-4 pt-2 pb-3 flex-1 flex flex-col min-h-0">
+                      {/* Title section - LIMITED HEIGHT */}
+                      <div className="flex-shrink-0 overflow-hidden mb-2 max-h-[48px]">
+                        <div className="text-white font-bold text-base leading-tight whitespace-nowrap overflow-hidden">
+                          {isExpanded ? (
+                            <div className="whitespace-normal">
+                              <span>{link.title}</span>
+                              <button
+                                onClick={() => toggleExpanded(link.id)}
+                                className="text-neutral-400 hover:text-white text-xs underline ml-1"
+                              >
+                                See less
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <span className={titleTooLong ? 'inline' : ''}>
+                                {titleTooLong ? link.title.substring(0, 60) + '...' : link.title}
+                              </span>
+                              {titleTooLong && (
+                                <button
+                                  onClick={() => toggleExpanded(link.id)}
+                                  className="text-neutral-400 hover:text-white text-xs underline ml-1"
+                                >
+                                  See more
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Metadata - FIXED */}
-                      <div className="flex-shrink-0 mb-3">
+                      {/* Spacer to push metadata and buttons down */}
+                      <div className="flex-1 min-h-0"></div>
+
+                      {/* Metadata - FIXED at bottom */}
+                      <div className="flex-shrink-0 mb-2">
                         <p className="text-neutral-400 text-sm mb-1">
                           {getDomain(link.url)}
                         </p>
@@ -296,7 +315,7 @@ export function DashboardScreen({ user }) {
                         </p>
                       </div>
 
-                      {/* Buttons - FIXED */}
+                      {/* Buttons - FIXED at bottom */}
                       <div className="flex gap-2 flex-shrink-0">
                         <button
                           onClick={() => handleCopy(link.url)}
