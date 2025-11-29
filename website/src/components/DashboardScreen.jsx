@@ -133,7 +133,7 @@ export function DashboardScreen({ user }) {
           )}
 
           {/* Center - Title */}
-          <h1 className="text-white text-4xl font-medium tracking-wide mr-29">
+          <h1 className="text-white text-4xl font-medium tracking-wide mr-27">
             {displayedTitle}
             <span className="animate-pulse">|</span>
           </h1>
