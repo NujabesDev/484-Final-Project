@@ -249,7 +249,7 @@ export function DashboardScreen({ user }) {
                     key={link.id}
                     className="bg-black border border-white rounded-xl overflow-hidden hover:bg-neutral-900 transition-colors h-[320px] flex flex-col"
                   >
-                    {/* Image preview - fixed height */}
+                    {/* Image preview - FIXED */}
                     <div className="w-full h-40 bg-neutral-900 overflow-hidden flex items-center justify-center flex-shrink-0">
                       {link.thumbnail ? (
                         <img
@@ -257,7 +257,6 @@ export function DashboardScreen({ user }) {
                           alt={link.title}
                           className="max-w-full max-h-full object-contain"
                           onError={(e) => {
-                            // Fallback to placeholder if thumbnail fails to load
                             e.target.src = "https://via.placeholder.com/400x300?text=No+Preview"
                           }}
                         />
@@ -270,17 +269,13 @@ export function DashboardScreen({ user }) {
                       )}
                     </div>
 
-                    {/* Card Content - fixed layout */}
-                    <div className="p-4 flex-1 flex flex-col min-h-0">
-                      {/* Title - fixed height, never expands */}
-                      <div className="flex-shrink-0 h-12 mb-1">
-                        <h3 className={`text-white font-bold text-base leading-tight ${!isExpanded && titleTooLong ? 'line-clamp-2' : ''} overflow-hidden`}>
+                    {/* Content wrapper with padding */}
+                    <div className="px-4 pt-3 pb-4 flex-1 flex flex-col min-h-0">
+                      {/* Title section - FLEXIBLE (only part that shrinks) */}
+                      <div className="flex-1 min-h-0 overflow-hidden mb-2">
+                        <h3 className="text-white font-bold text-base leading-tight mb-1 line-clamp-2">
                           {isExpanded ? link.title : (titleTooLong ? link.title.substring(0, 60) + '...' : link.title)}
                         </h3>
-                      </div>
-
-                      {/* See more button - fixed height slot */}
-                      <div className="flex-shrink-0 h-4 mb-1">
                         {titleTooLong && (
                           <button
                             onClick={() => toggleExpanded(link.id)}
@@ -291,8 +286,8 @@ export function DashboardScreen({ user }) {
                         )}
                       </div>
 
-                      {/* Metadata - locked position */}
-                      <div className="flex-shrink-0 mb-2">
+                      {/* Metadata - FIXED */}
+                      <div className="flex-shrink-0 mb-3">
                         <p className="text-neutral-400 text-sm mb-1">
                           {getDomain(link.url)}
                         </p>
@@ -301,10 +296,7 @@ export function DashboardScreen({ user }) {
                         </p>
                       </div>
 
-                      {/* Spacer to push buttons to bottom */}
-                      <div className="flex-1"></div>
-
-                      {/* Action Buttons - always at bottom */}
+                      {/* Buttons - FIXED */}
                       <div className="flex gap-2 flex-shrink-0">
                         <button
                           onClick={() => handleCopy(link.url)}
