@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 
 
-export function DashboardScreen({ user }) {
+export function DashboardScreen({ user, onNavigateToStats }) {
   const [links, setLinks] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -22,6 +22,7 @@ export function DashboardScreen({ user }) {
   const [showSortDropdown, setShowSortDropdown] = useState(false)
   const [sortOption, setSortOption] = useState('mostRecent') // default sort option
   const [showFilterDropdown, setShowFilterDropdown] = useState(false)
+  const [showHelpPopup, setShowHelpPopup] = useState(false)
   const [filters, setFilters] = useState({
     domain: 'all',
     dateSaved: 'all',
@@ -51,11 +52,14 @@ export function DashboardScreen({ user }) {
   // Typewriter effect for title
   useEffect(() => {
     let currentIndex = 0
+    let dotAdded = false
     const interval = setInterval(() => {
       if (currentIndex <= fullTitle.length) {
         setDisplayedTitle(fullTitle.slice(0, currentIndex))
         currentIndex++
-      } else {
+      } else if (!dotAdded) {
+        setDisplayedTitle(fullTitle + '.')
+        dotAdded = true
         clearInterval(interval)
       }
     }, 100) // 100ms per character - adjust for speed
@@ -110,6 +114,18 @@ export function DashboardScreen({ user }) {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showFilterDropdown])
+
+  // Close help popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showHelpPopup && !event.target.closest('.help-popup-container')) {
+        setShowHelpPopup(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showHelpPopup])
 
   const handleSignOut = async () => {
     try {
@@ -419,18 +435,50 @@ export function DashboardScreen({ user }) {
           {/* Right - Icons */}
           <div className="flex items-center gap-4">
             {/* Stats icon */}
-            <button className="text-white hover:text-neutral-300 transition-colors">
+            <button
+              onClick={onNavigateToStats}
+              className="text-white hover:text-neutral-300 transition-colors"
+            >
               <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </button>
 
-            {/* Help icon */}
-            <button className="text-white hover:text-neutral-300 transition-colors">
-              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
+            {/* Help icon with popup */}
+            <div className="relative help-popup-container">
+              <button
+                onClick={() => setShowHelpPopup(!showHelpPopup)}
+                className="text-white hover:text-neutral-300 transition-colors"
+              >
+                <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+
+              {/* Help Popup */}
+              {showHelpPopup && (
+                <div className="absolute top-full right-0 mt-2 bg-neutral-900 border border-white rounded-lg shadow-lg overflow-hidden z-50 w-48">
+                  <button
+                    onClick={() => {
+                      window.open('https://github.com/anthropics/claude-code/issues', '_blank')
+                      setShowHelpPopup(false)
+                    }}
+                    className="w-full px-6 py-3 text-left text-white hover:bg-neutral-800 transition-colors text-sm font-medium"
+                  >
+                    FAQ
+                  </button>
+                  <button
+                    onClick={() => {
+                      window.open('https://github.com/anthropics/claude-code/issues', '_blank')
+                      setShowHelpPopup(false)
+                    }}
+                    className="w-full px-6 py-3 text-left text-white hover:bg-neutral-800 transition-colors text-sm font-medium border-t border-neutral-700"
+                  >
+                    Request Support
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
