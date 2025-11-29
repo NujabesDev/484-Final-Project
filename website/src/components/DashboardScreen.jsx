@@ -157,7 +157,7 @@ export function DashboardScreen({ user }) {
             {/* Sign Out button */}
             <button
               onClick={handleSignOut}
-              className="px-6 py-2 bg-transparent border-2 border-white text-white rounded-full hover:bg-white hover:text-black transition-colors font-medium text-sm"
+              className="px-6 py-2 bg-transparent border border-white text-white rounded-full hover:bg-white hover:text-black transition-colors font-medium text-sm"
             >
               Sign Out
             </button>
@@ -230,41 +230,52 @@ export function DashboardScreen({ user }) {
               {filteredLinks.map((link) => (
                 <div
                   key={link.id}
-                  className="bg-white border-2 border-black rounded-xl p-5 hover:bg-neutral-100 transition-colors"
+                  className="bg-black border border-white rounded-xl overflow-hidden hover:bg-neutral-900 transition-colors"
                 >
-                  {/* Card Content */}
-                  <div className="mb-4">
-                    <h3 className="text-black font-bold text-lg mb-2 line-clamp-2">
-                      {link.title}
-                    </h3>
-                    <p className="text-neutral-600 text-sm mb-1">
-                      {getDomain(link.url)}
-                    </p>
-                    <p className="text-neutral-500 text-xs">
-                      {getTimeAgo(link.createdAt)}
-                    </p>
+                  {/* Image preview - top half */}
+                  <div className="w-full h-48 bg-neutral-800 overflow-hidden">
+                    <img
+                      src="https://via.placeholder.com/400x300"
+                      alt={link.title}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleCopy(link.url)}
-                      className="flex-1 px-3 py-2 bg-neutral-200 hover:bg-neutral-300 text-black rounded-lg transition-colors text-sm font-medium border border-black"
-                    >
-                      Copy
-                    </button>
-                    <button
-                      onClick={() => handleOpen(link.url, link.id)}
-                      className="flex-1 px-3 py-2 bg-neutral-200 hover:bg-neutral-300 text-black rounded-lg transition-colors text-sm font-medium border border-black"
-                    >
-                      Open
-                    </button>
-                    <button
-                      onClick={() => handleDelete(link.id)}
-                      className="flex-1 px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors text-sm font-medium border border-red-700"
-                    >
-                      Delete
-                    </button>
+                  {/* Card Content - bottom half */}
+                  <div className="p-5">
+                    <div className="mb-4">
+                      <h3 className="text-white font-bold text-lg mb-2 line-clamp-2">
+                        {link.title}
+                      </h3>
+                      <p className="text-neutral-400 text-sm mb-1">
+                        {getDomain(link.url)}
+                      </p>
+                      <p className="text-neutral-500 text-xs">
+                        {getTimeAgo(link.createdAt)}
+                      </p>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleCopy(link.url)}
+                        className="flex-1 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors text-sm font-medium border border-white"
+                      >
+                        Copy
+                      </button>
+                      <button
+                        onClick={() => handleOpen(link.url, link.id)}
+                        className="flex-1 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors text-sm font-medium border border-white"
+                      >
+                        Open
+                      </button>
+                      <button
+                        onClick={() => handleDelete(link.id)}
+                        className="flex-1 px-3 py-2 bg-red-900/50 hover:bg-red-900/70 text-red-400 rounded-lg transition-colors text-sm font-medium border border-red-500"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
