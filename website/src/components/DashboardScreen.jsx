@@ -271,35 +271,34 @@ export function DashboardScreen({ user }) {
 
                     {/* Content wrapper with padding */}
                     <div className="px-4 pt-2 pb-3 flex-1 flex flex-col min-h-0">
-                      {/* Title section - LIMITED HEIGHT */}
-                      <div className="flex-shrink-0 overflow-hidden mb-2 max-h-[48px]">
-                        <div className="text-white font-bold text-base leading-tight whitespace-nowrap overflow-hidden">
-                          {isExpanded ? (
-                            <div className="whitespace-normal">
-                              <span>{link.title}</span>
+                      {/* Title section - SINGLE LINE ONLY */}
+                      <div className="flex-shrink-0 h-6 mb-0 flex items-center">
+                        {isExpanded ? (
+                          <div className="text-white font-bold text-base overflow-auto max-h-20">
+                            <span>{link.title}</span>
+                            {' '}
+                            <button
+                              onClick={() => toggleExpanded(link.id)}
+                              className="text-neutral-400 hover:text-white text-xs underline whitespace-nowrap"
+                            >
+                              See less
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="text-white font-bold text-base whitespace-nowrap overflow-hidden w-full flex items-center">
+                            <span className="truncate flex-shrink min-w-0">
+                              {link.title}
+                            </span>
+                            {titleTooLong && (
                               <button
                                 onClick={() => toggleExpanded(link.id)}
-                                className="text-neutral-400 hover:text-white text-xs underline ml-1"
+                                className="text-neutral-400 hover:text-white text-xs underline ml-1 flex-shrink-0 whitespace-nowrap"
                               >
-                                See less
+                                See more
                               </button>
-                            </div>
-                          ) : (
-                            <>
-                              <span className={titleTooLong ? 'inline' : ''}>
-                                {titleTooLong ? link.title.substring(0, 60) + '...' : link.title}
-                              </span>
-                              {titleTooLong && (
-                                <button
-                                  onClick={() => toggleExpanded(link.id)}
-                                  className="text-neutral-400 hover:text-white text-xs underline ml-1"
-                                >
-                                  See more
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </div>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Spacer to push metadata and buttons down */}
