@@ -248,31 +248,31 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
 
     // Tech keywords
     if (title.match(/\b(code|programming|software|developer|tech|computer|ai|machine learning|javascript|python|react|github|api|database|server|web|app|mobile|ios|android|cloud|aws|google cloud|azure|docker|kubernetes|linux|windows|mac|crypto|blockchain|bitcoin|ethereum)\b/) ||
-        url.match(/stackoverflow|github|dev\.to|medium\.com\/.*tech|techcrunch|arstechnica|theverge|wired\.com|cnet\.com/)) {
+      url.match(/stackoverflow|github|dev\.to|medium\.com\/.*tech|techcrunch|arstechnica|theverge|wired\.com|cnet\.com/)) {
       return 'Tech'
     }
 
     // Finance keywords
     if (title.match(/\b(stock|invest|trading|finance|money|bank|crypto|bitcoin|ethereum|portfolio|401k|retirement|savings|mortgage|loan|credit|debt|tax|budget|wealth|market|economy|dividend|bond|forex)\b/) ||
-        url.match(/bloomberg|cnbc|marketwatch|investopedia|wallstreetjournal|finance\.yahoo|nerdwallet|mint\.com/)) {
+      url.match(/bloomberg|cnbc|marketwatch|investopedia|wallstreetjournal|finance\.yahoo|nerdwallet|mint\.com/)) {
       return 'Finance'
     }
 
     // Cooking keywords
     if (title.match(/\b(recipe|cook|bake|food|chef|kitchen|meal|dish|ingredient|cuisine|diet|nutrition|restaurant|dessert|breakfast|lunch|dinner|appetizer|sauce|spice|oven|grill|fry|boil|healthy eating)\b/) ||
-        url.match(/allrecipes|foodnetwork|epicurious|seriouseats|bonappetit|tasty\.co|delish\.com|food52/)) {
+      url.match(/allrecipes|foodnetwork|epicurious|seriouseats|bonappetit|tasty\.co|delish\.com|food52/)) {
       return 'Cooking'
     }
 
     // Entertainment keywords
     if (title.match(/\b(movie|film|tv show|series|netflix|hulu|disney|hbo|streaming|music|song|album|artist|band|concert|game|gaming|playstation|xbox|nintendo|esports|anime|manga|comic|marvel|dc|star wars|lord of the rings|podcast|youtube|twitch|celebrity|actor|actress)\b/) ||
-        url.match(/imdb|rottentomatoes|netflix|hulu|spotify|apple music|twitch\.tv|ign\.com|gamespot|polygon\.com|kotaku|entertainment\.com/)) {
+      url.match(/imdb|rottentomatoes|netflix|hulu|spotify|apple music|twitch\.tv|ign\.com|gamespot|polygon\.com|kotaku|entertainment\.com/)) {
       return 'Entertainment'
     }
 
     // School/Work keywords
     if (title.match(/\b(essay|research|study|homework|assignment|course|class|lecture|professor|student|education|university|college|school|degree|certification|exam|test|project|paper|thesis|dissertation|career|job|resume|interview|linkedin|professional|office|meeting|presentation|deadline|workload)\b/) ||
-        url.match(/coursera|udemy|khanacademy|edx|scholar\.google|researchgate|linkedin\.com|indeed\.com|glassdoor/)) {
+      url.match(/coursera|udemy|khanacademy|edx|scholar\.google|researchgate|linkedin\.com|indeed\.com|glassdoor/)) {
       return 'School/Work'
     }
 
@@ -352,9 +352,9 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
 
   const hasActiveFilters = () => {
     return filters.domain !== 'all' ||
-           filters.dateSaved !== 'all' ||
-           filters.starRating !== 'all' ||
-           filters.topic !== 'all'
+      filters.dateSaved !== 'all' ||
+      filters.starRating !== 'all' ||
+      filters.topic !== 'all'
   }
 
   const sortLinks = (linksToSort) => {
@@ -506,7 +506,7 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
               {/* Right - Controls */}
               <div className="flex items-center gap-4 flex-1 justify-end ml-8">
                 {/* Search bar */}
-                <div className="relative w-96">
+                <div className="relative w-85">
                   <input
                     type="text"
                     placeholder=""
@@ -521,243 +521,231 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
 
                 {/* Sort button with dropdown */}
                 <div className="relative sort-dropdown-container">
-                <button
-                  onClick={() => setShowSortDropdown(!showSortDropdown)}
-                  className="px-8 py-3 bg-transparent text-white rounded-full border border-white hover:bg-white hover:text-black transition-colors font-medium"
-                >
-                  Sort
-                </button>
+                  <button
+                    onClick={() => setShowSortDropdown(!showSortDropdown)}
+                    className="px-8 py-3 bg-transparent text-white rounded-full border border-white hover:bg-white hover:text-black transition-colors font-medium"
+                  >
+                    Sort
+                  </button>
 
-                {/* Sort Dropdown Menu */}
-                {showSortDropdown && (
-                  <div className="absolute top-full right-0 mt-2 bg-neutral-900 border border-white rounded-lg shadow-lg overflow-hidden z-50 min-w-[220px]">
-                    <button
-                      onClick={() => {
-                        setSortOption('aToZ')
-                        setShowSortDropdown(false)
-                      }}
-                      className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${
-                        sortOption === 'aToZ' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
-                      }`}
-                    >
-                      A → Z
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSortOption('zToA')
-                        setShowSortDropdown(false)
-                      }}
-                      className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${
-                        sortOption === 'zToA' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
-                      }`}
-                    >
-                      Z → A
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSortOption('mostRecent')
-                        setShowSortDropdown(false)
-                      }}
-                      className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${
-                        sortOption === 'mostRecent' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
-                      }`}
-                    >
-                      Most recently added
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSortOption('oldest')
-                        setShowSortDropdown(false)
-                      }}
-                      className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${
-                        sortOption === 'oldest' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
-                      }`}
-                    >
-                      Oldest first
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSortOption('highestRated')
-                        setShowSortDropdown(false)
-                      }}
-                      className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${
-                        sortOption === 'highestRated' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
-                      }`}
-                    >
-                      Highest rated
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSortOption('lowestRated')
-                        setShowSortDropdown(false)
-                      }}
-                      className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${
-                        sortOption === 'lowestRated' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
-                      }`}
-                    >
-                      Lowest rated
-                    </button>
-                  </div>
-                )}
-              </div>
+                  {/* Sort Dropdown Menu */}
+                  {showSortDropdown && (
+                    <div className="absolute top-full right-0 mt-2 bg-neutral-900 border border-white rounded-lg shadow-lg overflow-hidden z-50 min-w-[220px]">
+                      <button
+                        onClick={() => {
+                          setSortOption('aToZ')
+                          setShowSortDropdown(false)
+                        }}
+                        className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${sortOption === 'aToZ' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
+                          }`}
+                      >
+                        A → Z
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSortOption('zToA')
+                          setShowSortDropdown(false)
+                        }}
+                        className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${sortOption === 'zToA' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
+                          }`}
+                      >
+                        Z → A
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSortOption('mostRecent')
+                          setShowSortDropdown(false)
+                        }}
+                        className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${sortOption === 'mostRecent' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
+                          }`}
+                      >
+                        Most recently added
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSortOption('oldest')
+                          setShowSortDropdown(false)
+                        }}
+                        className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${sortOption === 'oldest' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
+                          }`}
+                      >
+                        Oldest first
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSortOption('highestRated')
+                          setShowSortDropdown(false)
+                        }}
+                        className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${sortOption === 'highestRated' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
+                          }`}
+                      >
+                        Highest rated
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSortOption('lowestRated')
+                          setShowSortDropdown(false)
+                        }}
+                        className={`w-full px-6 py-3 text-left transition-colors text-sm font-medium whitespace-nowrap ${sortOption === 'lowestRated' ? 'bg-neutral-700 text-white' : 'text-white hover:bg-neutral-800'
+                          }`}
+                      >
+                        Lowest rated
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-              {/* Filter button with dropdown */}
-              <div className="relative filter-dropdown-container">
-                <button
-                  onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                  className={`px-8 py-3 rounded-full border border-white transition-colors font-medium flex items-center gap-2 ${
-                    hasActiveFilters()
+                {/* Filter button with dropdown */}
+                <div className="relative filter-dropdown-container">
+                  <button
+                    onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                    className={`px-8 py-3 rounded-full border border-white transition-colors font-medium flex items-center gap-2 ${hasActiveFilters()
                       ? 'bg-white text-black'
                       : 'bg-transparent text-white hover:bg-white hover:text-black'
-                  }`}
-                >
-                  Filter
-                  {hasActiveFilters() && (
-                    <span className="w-2 h-2 bg-black rounded-full"></span>
+                      }`}
+                  >
+                    Filter
+                    {hasActiveFilters() && (
+                      <span className="w-2 h-2 bg-black rounded-full"></span>
+                    )}
+                  </button>
+
+                  {/* Filter Dropdown Menu */}
+                  {showFilterDropdown && (
+                    <div className="absolute top-full right-0 mt-2 bg-neutral-900 border border-white rounded-lg shadow-lg overflow-hidden z-50 w-[320px]">
+                      {/* Header with Clear All */}
+                      <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-700">
+                        <span className="text-white font-semibold text-sm">Filters</span>
+                        {hasActiveFilters() && (
+                          <button
+                            onClick={clearAllFilters}
+                            className="text-xs text-neutral-400 hover:text-white transition-colors"
+                          >
+                            Clear All
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Domain Filter */}
+                      <div className="border-b border-neutral-700">
+                        <div className="px-6 py-2 bg-neutral-800">
+                          <span className="text-white font-medium text-xs">Domain</span>
+                        </div>
+                        <div className="px-4 py-2">
+                          {[
+                            { value: 'all', label: 'All Domains' },
+                            { value: 'reddit', label: 'Reddit' },
+                            { value: 'youtube', label: 'YouTube' },
+                            { value: 'articles', label: 'Articles' }
+                          ].map((option) => (
+                            <button
+                              key={option.value}
+                              onClick={() => updateFilter('domain', option.value)}
+                              className={`w-full px-4 py-2 text-left text-sm rounded transition-colors ${filters.domain === option.value
+                                ? 'bg-neutral-700 text-white font-medium'
+                                : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
+                                }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Date Saved Filter */}
+                      <div className="border-b border-neutral-700">
+                        <div className="px-6 py-2 bg-neutral-800">
+                          <span className="text-white font-medium text-xs">Date Saved</span>
+                        </div>
+                        <div className="px-4 py-2">
+                          {[
+                            { value: 'all', label: 'All Dates' },
+                            { value: 'today', label: 'Today' },
+                            { value: 'thisWeek', label: 'This Week' },
+                            { value: 'thisMonth', label: 'This Month' },
+                            { value: 'older', label: 'Older' }
+                          ].map((option) => (
+                            <button
+                              key={option.value}
+                              onClick={() => updateFilter('dateSaved', option.value)}
+                              className={`w-full px-4 py-2 text-left text-sm rounded transition-colors ${filters.dateSaved === option.value
+                                ? 'bg-neutral-700 text-white font-medium'
+                                : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
+                                }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Star Rating Filter */}
+                      <div className="border-b border-neutral-700">
+                        <div className="px-6 py-2 bg-neutral-800">
+                          <span className="text-white font-medium text-xs">Star Rating</span>
+                        </div>
+                        <div className="px-4 py-2">
+                          {[
+                            { value: 'all', label: 'All Ratings' },
+                            { value: '5stars', label: '5 stars' },
+                            { value: '4stars', label: '4 stars' },
+                            { value: '3stars', label: '3 stars' },
+                            { value: '2stars', label: '2 stars' },
+                            { value: '1star', label: '1 star' },
+                            { value: 'unrated', label: 'Unrated' }
+                          ].map((option) => (
+                            <button
+                              key={option.value}
+                              onClick={() => updateFilter('starRating', option.value)}
+                              className={`w-full px-4 py-2 text-left text-sm rounded transition-colors ${filters.starRating === option.value
+                                ? 'bg-neutral-700 text-white font-medium'
+                                : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
+                                }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Topic Filter */}
+                      <div>
+                        <div className="px-6 py-2 bg-neutral-800">
+                          <span className="text-white font-medium text-xs">Topic</span>
+                        </div>
+                        <div className="px-4 py-2">
+                          {[
+                            { value: 'all', label: 'All Topics' },
+                            { value: 'Tech', label: 'Tech' },
+                            { value: 'Finance', label: 'Finance' },
+                            { value: 'Cooking', label: 'Cooking' },
+                            { value: 'Entertainment', label: 'Entertainment' },
+                            { value: 'School/Work', label: 'School/Work' }
+                          ].map((option) => (
+                            <button
+                              key={option.value}
+                              onClick={() => updateFilter('topic', option.value)}
+                              className={`w-full px-4 py-2 text-left text-sm rounded transition-colors ${filters.topic === option.value
+                                ? 'bg-neutral-700 text-white font-medium'
+                                : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
+                                }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   )}
-                </button>
-
-                {/* Filter Dropdown Menu */}
-                {showFilterDropdown && (
-                  <div className="absolute top-full right-0 mt-2 bg-neutral-900 border border-white rounded-lg shadow-lg overflow-hidden z-50 w-[320px]">
-                    {/* Header with Clear All */}
-                    <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-700">
-                      <span className="text-white font-semibold text-sm">Filters</span>
-                      {hasActiveFilters() && (
-                        <button
-                          onClick={clearAllFilters}
-                          className="text-xs text-neutral-400 hover:text-white transition-colors"
-                        >
-                          Clear All
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Domain Filter */}
-                    <div className="border-b border-neutral-700">
-                      <div className="px-6 py-2 bg-neutral-800">
-                        <span className="text-white font-medium text-xs">Domain</span>
-                      </div>
-                      <div className="px-4 py-2">
-                        {[
-                          { value: 'all', label: 'All Domains' },
-                          { value: 'reddit', label: 'Reddit' },
-                          { value: 'youtube', label: 'YouTube' },
-                          { value: 'articles', label: 'Articles' }
-                        ].map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => updateFilter('domain', option.value)}
-                            className={`w-full px-4 py-2 text-left text-sm rounded transition-colors ${
-                              filters.domain === option.value
-                                ? 'bg-neutral-700 text-white font-medium'
-                                : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Date Saved Filter */}
-                    <div className="border-b border-neutral-700">
-                      <div className="px-6 py-2 bg-neutral-800">
-                        <span className="text-white font-medium text-xs">Date Saved</span>
-                      </div>
-                      <div className="px-4 py-2">
-                        {[
-                          { value: 'all', label: 'All Dates' },
-                          { value: 'today', label: 'Today' },
-                          { value: 'thisWeek', label: 'This Week' },
-                          { value: 'thisMonth', label: 'This Month' },
-                          { value: 'older', label: 'Older' }
-                        ].map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => updateFilter('dateSaved', option.value)}
-                            className={`w-full px-4 py-2 text-left text-sm rounded transition-colors ${
-                              filters.dateSaved === option.value
-                                ? 'bg-neutral-700 text-white font-medium'
-                                : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Star Rating Filter */}
-                    <div className="border-b border-neutral-700">
-                      <div className="px-6 py-2 bg-neutral-800">
-                        <span className="text-white font-medium text-xs">Star Rating</span>
-                      </div>
-                      <div className="px-4 py-2">
-                        {[
-                          { value: 'all', label: 'All Ratings' },
-                          { value: '5stars', label: '5 stars' },
-                          { value: '4stars', label: '4 stars' },
-                          { value: '3stars', label: '3 stars' },
-                          { value: '2stars', label: '2 stars' },
-                          { value: '1star', label: '1 star' },
-                          { value: 'unrated', label: 'Unrated' }
-                        ].map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => updateFilter('starRating', option.value)}
-                            className={`w-full px-4 py-2 text-left text-sm rounded transition-colors ${
-                              filters.starRating === option.value
-                                ? 'bg-neutral-700 text-white font-medium'
-                                : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Topic Filter */}
-                    <div>
-                      <div className="px-6 py-2 bg-neutral-800">
-                        <span className="text-white font-medium text-xs">Topic</span>
-                      </div>
-                      <div className="px-4 py-2">
-                        {[
-                          { value: 'all', label: 'All Topics' },
-                          { value: 'Tech', label: 'Tech' },
-                          { value: 'Finance', label: 'Finance' },
-                          { value: 'Cooking', label: 'Cooking' },
-                          { value: 'Entertainment', label: 'Entertainment' },
-                          { value: 'School/Work', label: 'School/Work' }
-                        ].map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => updateFilter('topic', option.value)}
-                            className={`w-full px-4 py-2 text-left text-sm rounded transition-colors ${
-                              filters.topic === option.value
-                                ? 'bg-neutral-700 text-white font-medium'
-                                : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+                </div>
 
                 {/* Archive button */}
                 <button
                   onClick={() => setShowArchived(!showArchived)}
-                  className={`px-8 py-3 rounded-full border border-white transition-colors font-medium flex items-center gap-2 ${
-                    showArchived
-                      ? 'bg-white text-black'
-                      : 'bg-transparent text-white hover:bg-white hover:text-black'
-                  }`}
+                  className={`px-8 py-3 rounded-full border border-white transition-colors font-medium flex items-center gap-2 ${showArchived
+                    ? 'bg-white text-black'
+                    : 'bg-transparent text-white hover:bg-white hover:text-black'
+                    }`}
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
@@ -791,8 +779,8 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
                 {searchQuery
                   ? 'No links match your search'
                   : showArchived
-                  ? 'No archived links yet. Archive links to see them here!'
-                  : 'No links saved yet. Start saving from the extension!'}
+                    ? 'No archived links yet. Archive links to see them here!'
+                    : 'No links saved yet. Start saving from the extension!'}
               </p>
             </div>
           ) : (
