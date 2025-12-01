@@ -5,6 +5,9 @@ import {
   deleteLinkFromFirestore,
   toggleArchiveStatus,
   updateLinkRating,
+  deleteMultipleLinks,
+  archiveMultipleLinks,
+  rateMultipleLinks,
 } from '@/lib/firestore-service'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
@@ -30,6 +33,8 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
     starRating: 'all',
     topic: 'all'
   })
+  const [selectedLinks, setSelectedLinks] = useState(new Set())
+  const [showRatingPopup, setShowRatingPopup] = useState(false)
   const fullTitle = 'Read Later Randomly'
 
   useEffect(() => {
@@ -127,6 +132,18 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showHelpPopup])
+
+  // Close bulk rating popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showRatingPopup && !event.target.closest('.bulk-rating-popup')) {
+        setShowRatingPopup(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showRatingPopup])
 
   const handleSignOut = async () => {
     try {
@@ -375,6 +392,84 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
         return sorted.sort((a, b) => (a.rating || 0) - (b.rating || 0))
       default:
         return sorted
+    }
+  }
+
+  // Selection handlers
+  const toggleSelectLink = (linkId) => {
+    setSelectedLinks((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(linkId)) {
+        newSet.delete(linkId)
+      } else {
+        newSet.add(linkId)
+      }
+      return newSet
+    })
+  }
+
+  const selectAllVisible = () => {
+    const visibleLinkIds = filteredLinks.map(link => link.id)
+    setSelectedLinks(new Set(visibleLinkIds))
+  }
+
+  const deselectAll = () => {
+    setSelectedLinks(new Set())
+  }
+
+  // Bulk action handlers
+  const handleBulkDelete = async () => {
+    if (selectedLinks.size === 0) return
+
+    try {
+      const linkIds = Array.from(selectedLinks)
+      await deleteMultipleLinks(user.uid, linkIds)
+
+      setLinks((prev) => prev.filter((link) => !selectedLinks.has(link.id)))
+      setSelectedLinks(new Set())
+      toast.success(`Deleted ${linkIds.length} link${linkIds.length > 1 ? 's' : ''}`)
+    } catch (error) {
+      console.error('Error deleting links:', error)
+      toast.error('Failed to delete links')
+    }
+  }
+
+  const handleBulkArchive = async () => {
+    if (selectedLinks.size === 0) return
+
+    try {
+      const linkIds = Array.from(selectedLinks)
+      const newArchivedStatus = !showArchived
+
+      await archiveMultipleLinks(user.uid, linkIds, newArchivedStatus)
+
+      setLinks((prev) => prev.map(link =>
+        selectedLinks.has(link.id) ? { ...link, archived: newArchivedStatus } : link
+      ))
+      setSelectedLinks(new Set())
+      toast.success(`${newArchivedStatus ? 'Archived' : 'Unarchived'} ${linkIds.length} link${linkIds.length > 1 ? 's' : ''}`)
+    } catch (error) {
+      console.error('Error archiving links:', error)
+      toast.error('Failed to archive links')
+    }
+  }
+
+  const handleBulkRate = async (rating) => {
+    if (selectedLinks.size === 0) return
+
+    try {
+      const linkIds = Array.from(selectedLinks)
+      await rateMultipleLinks(user.uid, linkIds, rating)
+
+      setLinks((prev) => prev.map(link =>
+        selectedLinks.has(link.id) ? { ...link, rating } : link
+      ))
+      setSelectedLinks(new Set())
+      setShowRatingPopup(false)
+      toast.success(`Rated ${linkIds.length} link${linkIds.length > 1 ? 's' : ''} with ${rating} star${rating > 1 ? 's' : ''}`)
+    } catch (error) {
+      console.error('Error rating links:', error)
+      toast.error('Failed to rate links')
     }
   }
 
@@ -759,12 +854,106 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
             <div className="w-full h-px bg-white"></div>
           </div>
 
-          {/* Link count */}
+          {/* Selection controls and link count */}
           <div className="flex items-center justify-between mb-4">
-            <p className="text-white text-sm">
-              {filteredLinks.length} link{filteredLinks.length !== 1 ? 's' : ''}
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-white text-sm">
+                {filteredLinks.length} link{filteredLinks.length !== 1 ? 's' : ''}
+              </p>
+              {filteredLinks.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={selectAllVisible}
+                    className="text-xs text-white hover:text-neutral-300 transition-colors underline"
+                  >
+                    Select All
+                  </button>
+                  {selectedLinks.size > 0 && (
+                    <>
+                      <span className="text-neutral-600">|</span>
+                      <button
+                        onClick={deselectAll}
+                        className="text-xs text-white hover:text-neutral-300 transition-colors underline"
+                      >
+                        Deselect All
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+            {selectedLinks.size > 0 && (
+              <p className="text-white text-sm font-medium">
+                {selectedLinks.size} selected
+              </p>
+            )}
           </div>
+
+          {/* Bulk Actions Toolbar */}
+          {selectedLinks.size > 0 && (
+            <div className="mb-6 bg-neutral-900 border border-white rounded-xl p-4 flex items-center justify-between">
+              <p className="text-white font-medium">
+                Bulk Actions ({selectedLinks.size} link{selectedLinks.size > 1 ? 's' : ''})
+              </p>
+              <div className="flex items-center gap-3 relative">
+                {/* Delete Button */}
+                <button
+                  onClick={handleBulkDelete}
+                  className="px-6 py-2 bg-red-900/50 hover:bg-red-900/70 text-red-400 rounded-lg transition-colors text-sm font-medium border border-red-500"
+                >
+                  Delete
+                </button>
+
+                {/* Archive Button */}
+                <button
+                  onClick={handleBulkArchive}
+                  className="px-6 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors text-sm font-medium border border-white"
+                >
+                  {showArchived ? 'Unarchive' : 'Archive'}
+                </button>
+
+                {/* Rate Button with Popup */}
+                <div className="relative bulk-rating-popup">
+                  <button
+                    onClick={() => setShowRatingPopup(!showRatingPopup)}
+                    className="px-6 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors text-sm font-medium border border-white flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                    Rate
+                  </button>
+
+                  {/* Rating Popup */}
+                  {showRatingPopup && (
+                    <div className="absolute top-full right-0 mt-2 bg-black border border-white rounded-lg shadow-lg p-4 whitespace-nowrap z-50">
+                      <p className="text-white text-sm mb-3 font-medium">Select rating:</p>
+                      <div className="flex gap-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => handleBulkRate(star)}
+                            className="p-2 hover:bg-neutral-800 rounded transition-colors"
+                            title={`${star} star${star > 1 ? 's' : ''}`}
+                          >
+                            <svg
+                              className="w-6 h-6 text-yellow-400"
+                              fill="currentColor"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                            </svg>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Loading State */}
           {loading ? (
@@ -796,6 +985,23 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
                   >
                     {/* Top Left Icons */}
                     <div className="absolute top-2 left-2 z-10 flex gap-2">
+                      {/* Selection Checkbox */}
+                      <button
+                        onClick={() => toggleSelectLink(link.id)}
+                        className={`p-2 bg-black/70 hover:bg-black border rounded-lg transition-colors ${
+                          selectedLinks.has(link.id) ? 'border-green-500 bg-green-500/20' : 'border-white'
+                        }`}
+                        title={selectedLinks.has(link.id) ? 'Deselect' : 'Select'}
+                      >
+                        {selectedLinks.has(link.id) ? (
+                          <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                          </svg>
+                        ) : (
+                          <div className="w-4 h-4 border-2 border-white rounded" />
+                        )}
+                      </button>
+
                       {/* Archive Icon */}
                       <button
                         onClick={() => handleArchive(link.id)}

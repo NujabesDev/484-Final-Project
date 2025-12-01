@@ -119,3 +119,71 @@ export async function updateLinkRating(userId, linkId, rating) {
     rating: rating
   })
 }
+
+/**
+ * Archive or unarchive multiple links using batch operation
+ * @param {string} userId - The user's UID
+ * @param {Array<string>} linkIds - Array of Firestore document IDs to update
+ * @param {boolean} archived - New archive status
+ * @returns {Promise<void>}
+ * @throws {Error} If batch update fails
+ */
+export async function archiveMultipleLinks(userId, linkIds, archived) {
+  if (!userId) {
+    throw new Error('User not authenticated')
+  }
+
+  if (!linkIds || linkIds.length === 0) {
+    return
+  }
+
+  const BATCH_SIZE = 500
+
+  for (let i = 0; i < linkIds.length; i += BATCH_SIZE) {
+    const batch = writeBatch(db)
+    const batchIds = linkIds.slice(i, i + BATCH_SIZE)
+
+    batchIds.forEach((linkId) => {
+      const linkRef = doc(db, 'users', userId, 'links', linkId)
+      batch.update(linkRef, { archived })
+    })
+
+    await batch.commit()
+  }
+}
+
+/**
+ * Rate multiple links using batch operation
+ * @param {string} userId - The user's UID
+ * @param {Array<string>} linkIds - Array of Firestore document IDs to update
+ * @param {number} rating - Rating from 1-5
+ * @returns {Promise<void>}
+ * @throws {Error} If batch update fails
+ */
+export async function rateMultipleLinks(userId, linkIds, rating) {
+  if (!userId) {
+    throw new Error('User not authenticated')
+  }
+
+  if (rating < 1 || rating > 5) {
+    throw new Error('Rating must be between 1 and 5')
+  }
+
+  if (!linkIds || linkIds.length === 0) {
+    return
+  }
+
+  const BATCH_SIZE = 500
+
+  for (let i = 0; i < linkIds.length; i += BATCH_SIZE) {
+    const batch = writeBatch(db)
+    const batchIds = linkIds.slice(i, i + BATCH_SIZE)
+
+    batchIds.forEach((linkId) => {
+      const linkRef = doc(db, 'users', userId, 'links', linkId)
+      batch.update(linkRef, { rating })
+    })
+
+    await batch.commit()
+  }
+}
