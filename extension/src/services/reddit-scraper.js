@@ -56,19 +56,46 @@ export async function scrapeRedditThumbnail(url) {
     }
 
     // Try to get the best available thumbnail/image
-    // Priority: preview images > thumbnail > null
+    // Priority: direct image URL > gallery images > preview source > preview high-res > null
+    // Note: We avoid the low-quality thumbnail field as it's often blurry
 
-    // 1. Check for preview images (highest quality)
+    // 1. Check if the post URL itself is a direct image (i.redd.it, etc.)
+    if (postData.post_hint === 'image' && postData.url) {
+      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+      const urlLower = postData.url.toLowerCase();
+      if (imageExtensions.some(ext => urlLower.includes(ext)) ||
+          postData.url.includes('i.redd.it') ||
+          postData.url.includes('i.imgur.com')) {
+        return postData.url;
+      }
+    }
+
+    // 2. Check for gallery images (media_metadata contains full-size images)
+    if (postData.media_metadata) {
+      const mediaItems = Object.values(postData.media_metadata);
+      if (mediaItems.length > 0) {
+        const firstMedia = mediaItems[0];
+        // Get the highest quality version from media metadata
+        if (firstMedia.s && firstMedia.s.u) {
+          return decodeHtmlEntities(firstMedia.s.u);
+        }
+        // Fallback to gif if it's a gif
+        if (firstMedia.s && firstMedia.s.gif) {
+          return decodeHtmlEntities(firstMedia.s.gif);
+        }
+      }
+    }
+
+    // 3. Check for preview images (use highest quality available)
     if (postData.preview && postData.preview.images && postData.preview.images.length > 0) {
       const previewImage = postData.preview.images[0];
 
       // Get the source image (highest quality)
       if (previewImage.source && previewImage.source.url) {
-        // Decode HTML entities in URL
         return decodeHtmlEntities(previewImage.source.url);
       }
 
-      // Fallback to resolutions if source not available
+      // Fallback to highest resolution if source not available
       if (previewImage.resolutions && previewImage.resolutions.length > 0) {
         const bestResolution = previewImage.resolutions[previewImage.resolutions.length - 1];
         if (bestResolution && bestResolution.url) {
@@ -77,17 +104,8 @@ export async function scrapeRedditThumbnail(url) {
       }
     }
 
-    // 2. Check for thumbnail (lower quality, but better than nothing)
-    if (postData.thumbnail &&
-        postData.thumbnail !== 'self' &&
-        postData.thumbnail !== 'default' &&
-        postData.thumbnail !== 'nsfw' &&
-        postData.thumbnail !== 'spoiler' &&
-        postData.thumbnail.startsWith('http')) {
-      return postData.thumbnail;
-    }
-
-    // 3. No thumbnail found
+    // 4. No high-quality image found - return null instead of low-quality thumbnail
+    // This will trigger the "no image" placeholder on the website
     return null;
   } catch (error) {
     console.error('Error scraping Reddit thumbnail:', error);

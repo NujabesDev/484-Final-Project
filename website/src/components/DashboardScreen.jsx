@@ -860,19 +860,19 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
                             e.target.onerror = null
                             e.target.style.display = 'none'
                             e.target.parentElement.innerHTML = `
-                              <div class="w-full h-full flex items-center justify-center bg-neutral-800">
-                                <svg class="w-12 h-12 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                </svg>
+                              <div class="w-full h-full flex items-center justify-center bg-neutral-800 px-4">
+                                <p class="text-neutral-500 text-sm text-center font-medium">
+                                  This post does not have an image:(
+                                </p>
                               </div>
                             `
                           }}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-neutral-800">
-                          <svg className="w-12 h-12 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                          </svg>
+                        <div className="w-full h-full flex items-center justify-center bg-neutral-800 px-4">
+                          <p className="text-neutral-500 text-sm text-center font-medium">
+                            This post does not have an image:(
+                          </p>
                         </div>
                       )}
                     </div>
