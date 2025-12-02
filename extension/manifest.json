@@ -12,7 +12,9 @@
   "host_permissions": [
     "https://*.google.com/*",
     "https://*.googleapis.com/*",
-    "https://*.gstatic.com/*"
+    "https://*.gstatic.com/*",
+    "https://*.youtube.com/*",
+    "https://*.googlevideo.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
