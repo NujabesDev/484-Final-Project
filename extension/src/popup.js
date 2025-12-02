@@ -317,19 +317,102 @@ function updateQueueCount() {
   }
 }
 
+// Parse duration string (e.g., "10:23" or "1:05:30") to seconds
+function parseDuration(durationStr) {
+  const cleaned = durationStr.replace(/[^\d:]/g, '');
+  const parts = cleaned.split(':').filter(p => p.length > 0).reverse();
+
+  if (parts.length === 0) return 0;
+
+  let seconds = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const num = parseInt(parts[i], 10);
+    if (isNaN(num)) continue;
+    seconds += num * Math.pow(60, i);
+  }
+
+  return seconds;
+}
+
+// Extract YouTube duration from active tab
+async function extractYouTubeDuration(tab) {
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        // Try multiple selectors for YouTube duration
+        const selectors = [
+          'ytd-thumbnail-overlay-time-status-renderer #text',
+          '.ytd-thumbnail-overlay-time-status-renderer',
+          '#time-status',
+          'span.ytd-thumbnail-overlay-time-status-renderer',
+          '.ytp-time-duration',
+          // For video watch page
+          '.ytp-time-duration',
+          'span.ytp-time-duration'
+        ];
+
+        for (const selector of selectors) {
+          const element = document.querySelector(selector);
+          if (element && element.textContent.trim()) {
+            return element.textContent.trim();
+          }
+        }
+
+        // Try getting duration from video player
+        const video = document.querySelector('video');
+        if (video && video.duration && !isNaN(video.duration)) {
+          const totalSeconds = Math.floor(video.duration);
+          const hours = Math.floor(totalSeconds / 3600);
+          const minutes = Math.floor((totalSeconds % 3600) / 60);
+          const seconds = totalSeconds % 60;
+
+          if (hours > 0) {
+            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+          } else {
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          }
+        }
+
+        return null;
+      }
+    });
+
+    if (results && results[0] && results[0].result) {
+      return results[0].result;
+    }
+  } catch (error) {
+    console.error('Failed to extract YouTube duration:', error);
+  }
+  return null;
+}
+
 // Calculate time estimate for a URL (smart platform-based defaults)
-function calculateTimeEstimate(url, title) {
+async function calculateTimeEstimate(url, title, tab = null) {
   try {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname.toLowerCase();
 
-    // YouTube videos
+    // YouTube videos - try to extract real duration from page
     if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
       // Check for Shorts
       if (url.includes('/shorts/')) {
         return 60; // YouTube Shorts are max 60 seconds
       }
-      // Use title length as rough estimate
+
+      // Try to extract real duration from the page
+      if (tab) {
+        const durationStr = await extractYouTubeDuration(tab);
+        if (durationStr) {
+          const seconds = parseDuration(durationStr);
+          if (seconds > 0) {
+            console.log('Extracted YouTube duration:', durationStr, '→', seconds, 'seconds');
+            return seconds;
+          }
+        }
+      }
+
+      // Fallback: Use title length as rough estimate
       const titleLength = title.length;
       if (titleLength < 30) {
         return 300; // 5 minutes
@@ -386,14 +469,14 @@ function calculateTimeEstimate(url, title) {
 }
 
 // Save link to Firestore
-async function handleSaveLink(url, title) {
+async function handleSaveLink(url, title, tab = null) {
   if (!currentUser) {
     return;
   }
 
   try {
-    // Calculate time estimate for the URL
-    const timeEstimate = calculateTimeEstimate(url, title);
+    // Calculate time estimate for the URL (pass tab for YouTube duration extraction)
+    const timeEstimate = await calculateTimeEstimate(url, title, tab);
 
     const response = await saveLink(url, title, timeEstimate);
     queue.push(response.link);
@@ -495,7 +578,8 @@ saveCurrentBtn.addEventListener('click', async () => {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab) {
-      await handleSaveLink(tab.url, tab.title);
+      // Pass tab object so we can extract YouTube duration from the page
+      await handleSaveLink(tab.url, tab.title, tab);
     }
   } finally {
     operationInProgress = false;
