@@ -36,7 +36,11 @@
     {
       "matches": [
         "*://*.reddit.com/*",
-        "*://*.youtube.com/*"
+        "*://*.youtube.com/*",
+        "*://*.twitter.com/*",
+        "*://*.x.com/*",
+        "*://*.tiktok.com/*",
+        "*://*.instagram.com/*"
       ],
       "js": [
         "link-interceptor.js"

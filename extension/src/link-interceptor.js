@@ -1,4 +1,5 @@
-// Content script for intercepting Reddit posts and YouTube videos in Productivity Mode
+// Content script for intercepting social media links in Productivity Mode
+// Supports: Reddit, YouTube, Twitter/X, TikTok, Instagram
 
 // Cache productivity mode state for synchronous access
 let productivityModeEnabled = false;
@@ -104,6 +105,43 @@ function isYouTubeVideoUrl(url) {
   }
 }
 
+// Check if URL is a Twitter/X post
+function isTwitterPostUrl(url) {
+  try {
+    const urlObj = new URL(url);
+    // Check for twitter.com or x.com with /status/ pattern
+    return (urlObj.hostname.includes('twitter.com') || urlObj.hostname.includes('x.com')) &&
+           urlObj.pathname.includes('/status/');
+  } catch (e) {
+    return false;
+  }
+}
+
+// Check if URL is a TikTok video
+function isTikTokVideoUrl(url) {
+  try {
+    const urlObj = new URL(url);
+    // Check for tiktok.com with /video/ pattern or vm.tiktok.com
+    return (urlObj.hostname.includes('tiktok.com') &&
+           (urlObj.pathname.includes('/video/') || urlObj.pathname.includes('/@'))) ||
+           urlObj.hostname.includes('vm.tiktok.com');
+  } catch (e) {
+    return false;
+  }
+}
+
+// Check if URL is an Instagram post
+function isInstagramPostUrl(url) {
+  try {
+    const urlObj = new URL(url);
+    // Check for instagram.com with /p/ (post) or /reel/ pattern
+    return urlObj.hostname.includes('instagram.com') &&
+           (urlObj.pathname.includes('/p/') || urlObj.pathname.includes('/reel/'));
+  } catch (e) {
+    return false;
+  }
+}
+
 // Extract post title from Reddit link element
 function extractPostTitle(element) {
   // Try to find title text in the clicked element or its parent
@@ -157,17 +195,108 @@ function extractYouTubeTitle(element) {
   return element.textContent.trim() || 'YouTube Video';
 }
 
+// Extract tweet text from Twitter/X link element
+function extractTwitterTitle(element) {
+  // Try aria-label first
+  if (element.getAttribute('aria-label')) {
+    return element.getAttribute('aria-label').trim();
+  }
+
+  // Try to find tweet text in parent container
+  let titleElement = element;
+  for (let i = 0; i < 8; i++) {
+    if (!titleElement) break;
+
+    // Check for Twitter tweet text selectors
+    const possibleTitle = titleElement.querySelector('[data-testid="tweetText"]') ||
+                         titleElement.querySelector('.css-1rynq56') ||
+                         titleElement.querySelector('[lang]');
+
+    if (possibleTitle && possibleTitle.textContent.trim()) {
+      const text = possibleTitle.textContent.trim();
+      // Truncate if too long
+      return text.length > 100 ? text.substring(0, 100) + '...' : text;
+    }
+
+    titleElement = titleElement.parentElement;
+  }
+
+  // Fallback: use link text or default
+  return element.textContent.trim() || 'Twitter Post';
+}
+
+// Extract video title from TikTok link element
+function extractTikTokTitle(element) {
+  // Try aria-label first
+  if (element.getAttribute('aria-label')) {
+    return element.getAttribute('aria-label').trim();
+  }
+
+  // Try to find title in parent container
+  let titleElement = element;
+  for (let i = 0; i < 8; i++) {
+    if (!titleElement) break;
+
+    // Check for TikTok title/caption selectors
+    const possibleTitle = titleElement.querySelector('[class*="DivContainer"]') ||
+                         titleElement.querySelector('h1') ||
+                         titleElement.querySelector('[class*="title"]');
+
+    if (possibleTitle && possibleTitle.textContent.trim()) {
+      const text = possibleTitle.textContent.trim();
+      return text.length > 100 ? text.substring(0, 100) + '...' : text;
+    }
+
+    titleElement = titleElement.parentElement;
+  }
+
+  // Fallback: use link text or default
+  return element.textContent.trim() || 'TikTok Video';
+}
+
+// Extract caption from Instagram link element
+function extractInstagramTitle(element) {
+  // Try aria-label first (often has good caption info)
+  if (element.getAttribute('aria-label')) {
+    return element.getAttribute('aria-label').trim();
+  }
+
+  // Try to find caption in parent container
+  let titleElement = element;
+  for (let i = 0; i < 8; i++) {
+    if (!titleElement) break;
+
+    // Check for Instagram caption/title selectors
+    const possibleTitle = titleElement.querySelector('h1') ||
+                         titleElement.querySelector('h2') ||
+                         titleElement.querySelector('[class*="Caption"]');
+
+    if (possibleTitle && possibleTitle.textContent.trim()) {
+      const text = possibleTitle.textContent.trim();
+      return text.length > 100 ? text.substring(0, 100) + '...' : text;
+    }
+
+    titleElement = titleElement.parentElement;
+  }
+
+  // Fallback: use link text or default
+  return element.textContent.trim() || 'Instagram Post';
+}
+
 // Handle link click
 async function handleClick(event) {
   const target = event.target.closest('a');
   if (!target || !target.href) return;
 
-  // Check if this is a Reddit post or YouTube video
+  // Check if this is a supported platform link
   const isReddit = isRedditPostUrl(target.href);
   const isYouTube = isYouTubeVideoUrl(target.href);
+  const isTwitter = isTwitterPostUrl(target.href);
+  const isTikTok = isTikTokVideoUrl(target.href);
+  const isInstagram = isInstagramPostUrl(target.href);
 
   // Only proceed if it's a supported link type
-  if (!isReddit && !isYouTube) return;
+  if (!isReddit && !isYouTube && !isTwitter && !isTikTok && !isInstagram) return;
 
   // Check if productivity mode is enabled (synchronous check!)
   if (!productivityModeEnabled) return;
@@ -178,7 +307,18 @@ async function handleClick(event) {
 
   // Extract title and URL based on platform
   const url = target.href;
-  const title = isReddit ? extractPostTitle(target) : extractYouTubeTitle(target);
+  let title;
+  if (isReddit) {
+    title = extractPostTitle(target);
+  } else if (isYouTube) {
+    title = extractYouTubeTitle(target);
+  } else if (isTwitter) {
+    title = extractTwitterTitle(target);
+  } else if (isTikTok) {
+    title = extractTikTokTitle(target);
+  } else if (isInstagram) {
+    title = extractInstagramTitle(target);
+  }
 
   try {
     // Send to background script - it handles all validation and duplicate checking
