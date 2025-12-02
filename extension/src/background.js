@@ -30,6 +30,53 @@ const db = getFirestore(app);
 let realtimeSyncUnsubscribe = null;
 let currentSyncUserId = null;
 
+// Auth state tracking
+let authReady = false;
+let authReadyPromise = null;
+
+// Wait for Firebase auth to restore from IndexedDB
+function waitForAuth(timeout = 3000) {
+  // If auth is already ready, return immediately
+  if (authReady) {
+    return Promise.resolve(auth.currentUser);
+  }
+
+  // If we already have a pending promise, return it
+  if (authReadyPromise) {
+    return authReadyPromise;
+  }
+
+  // Create new promise to wait for auth
+  authReadyPromise = new Promise((resolve) => {
+    const timeoutId = setTimeout(() => {
+      console.log('Auth wait timeout - proceeding with current state');
+      authReady = true;
+      authReadyPromise = null;
+      resolve(auth.currentUser);
+    }, timeout);
+
+    // Check immediately
+    if (auth.currentUser) {
+      clearTimeout(timeoutId);
+      authReady = true;
+      authReadyPromise = null;
+      resolve(auth.currentUser);
+      return;
+    }
+
+    // Wait for onAuthStateChanged to fire
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      clearTimeout(timeoutId);
+      authReady = true;
+      authReadyPromise = null;
+      unsubscribe();
+      resolve(user);
+    });
+  });
+
+  return authReadyPromise;
+}
+
 // Start real-time Firestore listener for user's links
 function startRealtimeSync(userId) {
   // Skip if already listening for this user
@@ -93,6 +140,7 @@ async function clearLinkCache() {
 
 // Listen for Firebase auth state changes
 onAuthStateChanged(auth, async (user) => {
+  authReady = true; // Mark auth as ready whenever state changes
   if (user) {
     console.log('User signed in:', user.uid);
     startRealtimeSync(user.uid);
@@ -226,13 +274,20 @@ async function handleSaveLink(message, sendResponse) {
   try {
     const { url, title, timeEstimate } = message;
 
-    if (!auth.currentUser?.uid) {
+    // Wait for auth to be ready (handles IndexedDB restoration delay)
+    console.log('Waiting for auth to be ready...');
+    const user = await waitForAuth();
+
+    if (!user?.uid) {
+      console.log('No authenticated user after waiting');
       sendResponse({
         success: false,
-        error: 'Not authenticated'
+        error: 'Not authenticated - please sign in first'
       });
       return;
     }
+
+    console.log('Auth ready, user:', user.uid);
 
     // Check cache for duplicates first (instant - avoids network call in most cases)
     // Firestore also checks for duplicates as safety net (handles stale cache edge cases)
@@ -258,7 +313,7 @@ async function handleSaveLink(message, sendResponse) {
     }
 
     // Save to Firestore (waits for confirmation, includes duplicate check as safety net)
-    const newLink = await saveLinkToFirestore(db, auth.currentUser.uid, url, title, thumbnail, timeEstimate);
+    const newLink = await saveLinkToFirestore(db, user.uid, url, title, thumbnail, timeEstimate);
 
     // Update cache after successful Firestore save
     // onSnapshot will also update cache, but this ensures immediate popup feedback

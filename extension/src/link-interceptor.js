@@ -573,14 +573,20 @@ async function handleClick(event) {
       showNotification('Saved for later!', 'success');
     } else if (response.error?.includes('already exists')) {
       showNotification('Already saved!', 'warning');
-    } else if (response.error?.includes('authenticated')) {
-      showNotification('Sign in to save links', 'error');
+    } else if (response.error?.includes('authenticated') || response.error?.includes('sign in')) {
+      showNotification('Please sign in to save links', 'error');
     } else {
-      showNotification('Failed to save', 'error');
+      showNotification('Failed to save - try again', 'error');
     }
   } catch (error) {
     console.error('Failed to save link:', error);
-    showNotification('Extension error', 'error');
+    // Service worker might have crashed - suggest reopening extension
+    if (error.message?.includes('Extension context invalidated') ||
+        error.message?.includes('message port closed')) {
+      showNotification('Extension reloaded - try again', 'warning');
+    } else {
+      showNotification('Failed to save - try again', 'error');
+    }
   }
 }
 
@@ -749,14 +755,19 @@ async function saveSocialMediaLink(url, title, timeEstimate = 600) {
       showNotification('Saved for later!', 'success');
     } else if (response.error?.includes('already exists')) {
       showNotification('Already saved!', 'warning');
-    } else if (response.error?.includes('authenticated')) {
-      showNotification('Sign in to save links', 'error');
+    } else if (response.error?.includes('authenticated') || response.error?.includes('sign in')) {
+      showNotification('Please sign in to save links', 'error');
     } else {
-      showNotification('Failed to save', 'error');
+      showNotification('Failed to save - try again', 'error');
     }
   } catch (error) {
     console.error('Failed to save link:', error);
-    showNotification('Extension error', 'error');
+    if (error.message?.includes('Extension context invalidated') ||
+        error.message?.includes('message port closed')) {
+      showNotification('Extension reloaded - try again', 'warning');
+    } else {
+      showNotification('Failed to save - try again', 'error');
+    }
   }
 }
 
