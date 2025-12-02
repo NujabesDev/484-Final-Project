@@ -33,23 +33,47 @@ let currentSyncUserId = null;
 // Auth state tracking
 let authReady = false;
 let authReadyPromise = null;
+let pendingSaveRequests = [];
 
-// Wait for Firebase auth to restore from IndexedDB
-function waitForAuth(timeout = 3000) {
+// Wait for Firebase auth to restore from IndexedDB with retry logic
+async function waitForAuth(timeout = 10000, retryAttempt = 0) {
+  const maxRetries = 3;
+  const retryDelays = [1000, 2000, 4000]; // Exponential backoff
+
+  console.log(`[AUTH] waitForAuth called (attempt ${retryAttempt + 1}/${maxRetries + 1}, timeout: ${timeout}ms)`);
+
   // If auth is already ready, return immediately
-  if (authReady) {
+  if (authReady && auth.currentUser) {
+    console.log('[AUTH] Auth already ready, user:', auth.currentUser.uid);
     return Promise.resolve(auth.currentUser);
   }
 
   // If we already have a pending promise, return it
   if (authReadyPromise) {
+    console.log('[AUTH] Returning existing auth promise');
     return authReadyPromise;
   }
 
   // Create new promise to wait for auth
   authReadyPromise = new Promise((resolve) => {
-    const timeoutId = setTimeout(() => {
-      console.log('Auth wait timeout - proceeding with current state');
+    const timeoutId = setTimeout(async () => {
+      console.log(`[AUTH] Timeout reached after ${timeout}ms`);
+
+      // Try retry logic if we have retries left and still no user
+      if (retryAttempt < maxRetries && !auth.currentUser) {
+        const delay = retryDelays[retryAttempt];
+        console.log(`[AUTH] Retrying after ${delay}ms delay...`);
+        authReadyPromise = null;
+
+        // Wait and retry
+        await new Promise(r => setTimeout(r, delay));
+        const user = await waitForAuth(timeout, retryAttempt + 1);
+        resolve(user);
+        return;
+      }
+
+      // No more retries - proceed with current state
+      console.log('[AUTH] No more retries, proceeding with current state:', auth.currentUser ? 'AUTHENTICATED' : 'NOT AUTHENTICATED');
       authReady = true;
       authReadyPromise = null;
       resolve(auth.currentUser);
@@ -57,6 +81,7 @@ function waitForAuth(timeout = 3000) {
 
     // Check immediately
     if (auth.currentUser) {
+      console.log('[AUTH] User immediately available:', auth.currentUser.uid);
       clearTimeout(timeoutId);
       authReady = true;
       authReadyPromise = null;
@@ -64,8 +89,11 @@ function waitForAuth(timeout = 3000) {
       return;
     }
 
+    console.log('[AUTH] Waiting for onAuthStateChanged...');
+
     // Wait for onAuthStateChanged to fire
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log('[AUTH] onAuthStateChanged fired, user:', user ? user.uid : 'null');
       clearTimeout(timeoutId);
       authReady = true;
       authReadyPromise = null;
@@ -75,6 +103,28 @@ function waitForAuth(timeout = 3000) {
   });
 
   return authReadyPromise;
+}
+
+// Process any pending save requests after auth is confirmed
+async function processPendingSaveRequests() {
+  if (pendingSaveRequests.length === 0) return;
+
+  console.log(`[AUTH] Processing ${pendingSaveRequests.length} pending save requests`);
+
+  const requests = [...pendingSaveRequests];
+  pendingSaveRequests = [];
+
+  for (const { message, sendResponse } of requests) {
+    try {
+      await handleSaveLink(message, sendResponse);
+    } catch (error) {
+      console.error('[AUTH] Failed to process pending save request:', error);
+      sendResponse({
+        success: false,
+        error: 'Failed to process pending request: ' + error.message
+      });
+    }
+  }
 }
 
 // Start real-time Firestore listener for user's links
@@ -142,12 +192,28 @@ async function clearLinkCache() {
 onAuthStateChanged(auth, async (user) => {
   authReady = true; // Mark auth as ready whenever state changes
   if (user) {
-    console.log('User signed in:', user.uid);
+    console.log('[AUTH] User signed in:', user.uid);
     startRealtimeSync(user.uid);
+
+    // Process any pending save requests that were waiting for auth
+    await processPendingSaveRequests();
   } else {
-    console.log('User signed out');
+    console.log('[AUTH] User signed out');
     stopRealtimeSync();
     await clearLinkCache();
+
+    // Clear any pending requests on sign out
+    if (pendingSaveRequests.length > 0) {
+      console.log(`[AUTH] Clearing ${pendingSaveRequests.length} pending requests due to sign out`);
+      const requests = [...pendingSaveRequests];
+      pendingSaveRequests = [];
+      requests.forEach(({ sendResponse }) => {
+        sendResponse({
+          success: false,
+          error: 'Authentication required - please sign in'
+        });
+      });
+    }
   }
 });
 
@@ -201,11 +267,19 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 // Handle authentication token from website
 async function handleAuthSuccess(message, sendResponse) {
   try {
+    console.log('[AUTH] Received auth token from website');
     const { token } = message;
     const credential = GoogleAuthProvider.credential(token);
+
+    console.log('[AUTH] Signing in with credential...');
     await signInWithCredential(auth, credential);
+    console.log('[AUTH] Sign in successful');
+
     sendResponse({ success: true });
+
+    // Note: onAuthStateChanged will fire and process pending requests automatically
   } catch (error) {
+    console.error('[AUTH] Sign in failed:', error);
     sendResponse({ success: false, error: error.message });
   }
 }
@@ -274,12 +348,24 @@ async function handleSaveLink(message, sendResponse) {
   try {
     const { url, title, timeEstimate } = message;
 
+    console.log('[SAVE] Save link request:', url);
+
     // Wait for auth to be ready (handles IndexedDB restoration delay)
-    console.log('Waiting for auth to be ready...');
+    console.log('[SAVE] Waiting for auth to be ready...');
     const user = await waitForAuth();
 
     if (!user?.uid) {
-      console.log('No authenticated user after waiting');
+      // If still no user after waiting with retries, check if we should queue
+      // This can happen on fresh install or if auth is taking longer than expected
+      if (!authReady) {
+        console.log('[SAVE] Auth not ready yet, queuing request for processing after sign-in');
+        pendingSaveRequests.push({ message, sendResponse });
+
+        // Don't call sendResponse yet - will be called when request is processed
+        return;
+      }
+
+      console.log('[SAVE] No authenticated user after waiting - user needs to sign in');
       sendResponse({
         success: false,
         error: 'Not authenticated - please sign in first'
@@ -287,12 +373,13 @@ async function handleSaveLink(message, sendResponse) {
       return;
     }
 
-    console.log('Auth ready, user:', user.uid);
+    console.log('[SAVE] Auth ready, user:', user.uid);
 
     // Check cache for duplicates first (instant - avoids network call in most cases)
     // Firestore also checks for duplicates as safety net (handles stale cache edge cases)
     const currentCache = await loadCacheFromLocal();
     if (currentCache.some(link => link.url === url)) {
+      console.log('[SAVE] Duplicate link found in cache');
       sendResponse({
         success: false,
         error: 'Link already exists'
@@ -303,23 +390,26 @@ async function handleSaveLink(message, sendResponse) {
     // Scrape Reddit thumbnail if this is a Reddit post
     let thumbnail = null;
     if (isRedditPostUrl(url)) {
-      console.log('Detected Reddit post, scraping thumbnail...');
+      console.log('[SAVE] Detected Reddit post, scraping thumbnail...');
       thumbnail = await scrapeRedditThumbnail(url);
       if (thumbnail) {
-        console.log('Reddit thumbnail scraped:', thumbnail);
+        console.log('[SAVE] Reddit thumbnail scraped:', thumbnail);
       } else {
-        console.log('No thumbnail found for Reddit post');
+        console.log('[SAVE] No thumbnail found for Reddit post');
       }
     }
 
+    console.log('[SAVE] Saving to Firestore...');
     // Save to Firestore (waits for confirmation, includes duplicate check as safety net)
     const newLink = await saveLinkToFirestore(db, user.uid, url, title, thumbnail, timeEstimate);
+    console.log('[SAVE] Successfully saved to Firestore:', newLink.id);
 
     // Update cache after successful Firestore save
     // onSnapshot will also update cache, but this ensures immediate popup feedback
     // Check prevents duplicate if onSnapshot already fired
     if (!currentCache.some(l => l.id === newLink.id)) {
       await saveCacheToLocal([...currentCache, newLink]);
+      console.log('[SAVE] Cache updated');
     }
 
     sendResponse({
@@ -327,7 +417,7 @@ async function handleSaveLink(message, sendResponse) {
       link: newLink
     });
   } catch (error) {
-    console.error('Failed to save link:', error);
+    console.error('[SAVE] Failed to save link:', error);
     sendResponse({
       success: false,
       error: error.message
