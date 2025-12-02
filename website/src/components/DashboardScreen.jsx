@@ -239,6 +239,28 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
     }
   }
 
+  const getYouTubeThumbnail = (url) => {
+    try {
+      const urlObj = new URL(url)
+      let videoId = null
+
+      // Extract video ID from different YouTube URL formats
+      if (urlObj.hostname.includes('youtube.com')) {
+        videoId = urlObj.searchParams.get('v')
+      } else if (urlObj.hostname.includes('youtu.be')) {
+        videoId = urlObj.pathname.slice(1).split('?')[0]
+      }
+
+      if (videoId) {
+        // Use YouTube's thumbnail API - mqdefault is good quality and always available
+        return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+      }
+    } catch {
+      return null
+    }
+    return null
+  }
+
   const getPlatformLogo = (url) => {
     try {
       const urlObj = new URL(url)
@@ -246,6 +268,10 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
 
       // Check for specific platforms and return their logo URLs
       if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+        // For YouTube, try to get video thumbnail first
+        const thumbnail = getYouTubeThumbnail(url)
+        if (thumbnail) return thumbnail
+        // Fallback to YouTube logo
         return 'https://www.youtube.com/s/desktop/f506bd45/img/favicon_144x144.png'
       }
       if (hostname.includes('reddit.com')) {

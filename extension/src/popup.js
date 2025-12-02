@@ -83,8 +83,8 @@ async function getLinks() {
   return response;
 }
 
-async function saveLink(url, title) {
-  const response = await sendMessage('SAVE_LINK', { url, title });
+async function saveLink(url, title, timeEstimate = null) {
+  const response = await sendMessage('SAVE_LINK', { url, title, timeEstimate });
   return response;
 }
 
@@ -317,6 +317,74 @@ function updateQueueCount() {
   }
 }
 
+// Calculate time estimate for a URL (smart platform-based defaults)
+function calculateTimeEstimate(url, title) {
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname.toLowerCase();
+
+    // YouTube videos
+    if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+      // Check for Shorts
+      if (url.includes('/shorts/')) {
+        return 60; // YouTube Shorts are max 60 seconds
+      }
+      // Use title length as rough estimate
+      const titleLength = title.length;
+      if (titleLength < 30) {
+        return 300; // 5 minutes
+      } else if (titleLength < 60) {
+        return 600; // 10 minutes
+      } else {
+        return 900; // 15 minutes
+      }
+    }
+
+    // TikTok videos
+    if (hostname.includes('tiktok.com')) {
+      return 45; // TikTok videos average 30-60 seconds
+    }
+
+    // Instagram
+    if (hostname.includes('instagram.com')) {
+      if (url.includes('/reel/')) {
+        return 30; // Reels are short
+      } else {
+        return 20; // Image posts with captions
+      }
+    }
+
+    // Reddit
+    if (hostname.includes('reddit.com') && url.includes('/comments/')) {
+      // Check for video indicators in URL
+      if (url.includes('v.redd.it') || url.includes('/video/')) {
+        return 480; // Average Reddit video ~8 minutes
+      }
+      // Text post - use title length as proxy
+      const titleLength = title.length;
+      if (titleLength < 50) {
+        return 60; // Short post
+      } else if (titleLength < 100) {
+        return 120; // Medium post
+      } else {
+        return 180; // Long post
+      }
+    }
+
+    // Twitter/X
+    if (hostname.includes('twitter.com') || hostname.includes('x.com')) {
+      if (url.includes('/status/')) {
+        return 30; // Tweets are quick to read
+      }
+    }
+
+    // Fallback default
+    return 120; // 2 minutes default
+  } catch (e) {
+    return 120; // 2 minutes default on error
+  }
+}
+
 // Save link to Firestore
 async function handleSaveLink(url, title) {
   if (!currentUser) {
@@ -324,7 +392,10 @@ async function handleSaveLink(url, title) {
   }
 
   try {
-    const response = await saveLink(url, title);
+    // Calculate time estimate for the URL
+    const timeEstimate = calculateTimeEstimate(url, title);
+
+    const response = await saveLink(url, title, timeEstimate);
     queue.push(response.link);
     displayRandomLink();
   } catch (error) {
