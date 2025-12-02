@@ -429,65 +429,94 @@ function extractInstagramTitle(element) {
   return element.textContent.trim() || 'Instagram Post';
 }
 
-// Calculate time estimate in seconds (video duration or reading time)
-function calculateTimeEstimate(element, url, isYouTube, isReddit, isTwitter, isTikTok, isInstagram) {
-  // For YouTube videos: try to extract duration
+// Calculate time estimate in seconds using smart platform-based defaults and title heuristics
+function calculateTimeEstimate(element, url, title, isYouTube, isReddit, isTwitter, isTikTok, isInstagram) {
+  // Try to extract duration from DOM first (best effort)
+  let extractedDuration = null;
+
   if (isYouTube) {
-    const duration = extractYouTubeDuration(element);
-    console.log('YouTube time estimate:', duration, 'seconds (', Math.floor(duration / 60), 'min)');
-    return duration;
+    extractedDuration = extractYouTubeDuration(element);
+    if (extractedDuration && extractedDuration !== 600) { // If we found real duration (not default)
+      console.log('✓ YouTube duration extracted:', extractedDuration, 'sec (', Math.floor(extractedDuration / 60), 'min)');
+      return extractedDuration;
+    }
   }
 
-  // For TikTok videos
+  // If extraction failed or not applicable, use smart defaults based on platform and title
+
+  // YouTube: Use title length and URL patterns as heuristics
+  if (isYouTube) {
+    // Check for "Shorts" in URL
+    if (url.includes('/shorts/')) {
+      console.log('YouTube Short detected: 60 seconds');
+      return 60; // YouTube Shorts are max 60 seconds
+    }
+    // Use title length as rough estimate
+    // Shorter titles often = shorter videos, longer = longer
+    const titleLength = title.length;
+    if (titleLength < 30) {
+      console.log('Short YouTube title: 5 min estimate');
+      return 300; // 5 minutes
+    } else if (titleLength < 60) {
+      console.log('Medium YouTube title: 10 min estimate');
+      return 600; // 10 minutes
+    } else {
+      console.log('Long YouTube title: 15 min estimate');
+      return 900; // 15 minutes
+    }
+  }
+
+  // TikTok: Always short videos
   if (isTikTok) {
-    console.log('TikTok time estimate: 30 seconds');
-    return 30;
+    console.log('TikTok video: 45 seconds');
+    return 45; // TikTok videos average 30-60 seconds
   }
 
-  // For Reddit: check if it's a video post first
-  if (isReddit && isRedditVideoPost(element, url)) {
-    const videoDuration = extractRedditVideoDuration(element);
-    if (videoDuration) {
-      console.log('Reddit video time estimate:', videoDuration, 'seconds (', Math.floor(videoDuration / 60), 'min)');
-      return videoDuration;
+  // Instagram: Reels vs Posts
+  if (isInstagram) {
+    if (url.includes('/reel/')) {
+      console.log('Instagram Reel: 30 seconds');
+      return 30; // Reels are short
+    } else {
+      console.log('Instagram Post: 20 seconds');
+      return 20; // Image posts with captions
     }
-    // If we know it's a video but couldn't get duration, assume longer video
-    console.log('Reddit video (duration unknown), using default 10 minutes');
-    return 600; // 10 minutes for video posts without duration
   }
 
-  // For text posts: calculate reading time based on word count (220 words per minute)
-  let textContent = '';
-
+  // Reddit: Detect video vs text posts
   if (isReddit) {
-    textContent = extractRedditFullText(element);
-  } else if (isTwitter) {
-    textContent = extractTwitterFullText(element);
-  } else if (isInstagram) {
-    // Instagram: extract caption text
-    let captionElement = element;
-    for (let i = 0; i < 8; i++) {
-      if (!captionElement) break;
-      const caption = captionElement.querySelector('h1') || captionElement.querySelector('[class*="Caption"]');
-      if (caption && caption.textContent.trim()) {
-        textContent = caption.textContent.trim();
-        break;
-      }
-      captionElement = captionElement.parentElement;
+    // Check URL patterns for videos
+    if (url.includes('v.redd.it') ||
+        url.includes('/video/') ||
+        url.match(/\.(mp4|webm|mov|avi)$/i) ||
+        isRedditVideoPost(element, url)) {
+      console.log('Reddit video post: 8 min estimate');
+      return 480; // Average Reddit video ~8 minutes
+    }
+
+    // Text post - use title length as proxy for post length
+    const titleLength = title.length;
+    if (titleLength < 50) {
+      console.log('Short Reddit post: 1 min reading time');
+      return 60; // Short post
+    } else if (titleLength < 100) {
+      console.log('Medium Reddit post: 2 min reading time');
+      return 120; // Medium post
+    } else {
+      console.log('Long Reddit post: 3 min reading time');
+      return 180; // Long post
     }
   }
 
-  // Calculate reading time
-  if (textContent) {
-    const wordCount = textContent.split(/\s+/).filter(word => word.length > 0).length;
-    const readingTimeSeconds = Math.ceil((wordCount / 220) * 60);
-    console.log('Text post time estimate:', readingTimeSeconds, 'seconds for', wordCount, 'words');
-    return Math.max(readingTimeSeconds, 15); // Minimum 15 seconds
+  // Twitter: Always short text
+  if (isTwitter) {
+    console.log('Twitter post: 30 seconds reading time');
+    return 30; // Tweets are quick to read
   }
 
-  // Default: 60 seconds
-  console.log('Using default time estimate: 60 seconds');
-  return 60;
+  // Fallback default
+  console.log('Using fallback estimate: 2 minutes');
+  return 120; // 2 minutes default
 }
 
 // Handle link click
@@ -527,8 +556,8 @@ async function handleClick(event) {
     title = extractInstagramTitle(target);
   }
 
-  // Calculate time estimate
-  const timeEstimate = calculateTimeEstimate(target, url, isYouTube, isReddit, isTwitter, isTikTok, isInstagram);
+  // Calculate time estimate (pass title for heuristics)
+  const timeEstimate = calculateTimeEstimate(target, url, title, isYouTube, isReddit, isTwitter, isTikTok, isInstagram);
 
   try {
     // Send to background script - it handles all validation and duplicate checking
