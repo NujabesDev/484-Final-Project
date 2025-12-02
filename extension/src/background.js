@@ -525,24 +525,53 @@ async function handleFetchYouTubeDuration(message, sendResponse) {
     const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
     const html = await response.text();
 
-    // Try to extract duration from meta tags or JSON-LD
-    // Look for ISO 8601 duration format (e.g., "PT10M23S")
-    const durationMatch = html.match(/"duration":"PT(\d+H)?(\d+M)?(\d+S)?"/);
+    // Try multiple patterns to extract duration
+    let totalSeconds = null;
 
-    if (durationMatch) {
-      const hours = durationMatch[1] ? parseInt(durationMatch[1]) : 0;
-      const minutes = durationMatch[2] ? parseInt(durationMatch[2]) : 0;
-      const seconds = durationMatch[3] ? parseInt(durationMatch[3]) : 0;
+    // Pattern 1: ISO 8601 duration format (e.g., "PT10M23S", "PT1H15M30S")
+    const iso8601Match = html.match(/"duration":"PT(\d+H)?(\d+M)?(\d+S)?"/);
+    if (iso8601Match) {
+      const hours = iso8601Match[1] ? parseInt(iso8601Match[1]) : 0;
+      const minutes = iso8601Match[2] ? parseInt(iso8601Match[2]) : 0;
+      const seconds = iso8601Match[3] ? parseInt(iso8601Match[3]) : 0;
+      totalSeconds = hours * 3600 + minutes * 60 + seconds;
+      console.log('[YOUTUBE] ✓ Found duration (ISO 8601):', totalSeconds, 'seconds');
+    }
 
-      const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-      console.log('[YOUTUBE] ✓ Fetched duration:', totalSeconds, 'seconds');
+    // Pattern 2: lengthSeconds field (often in ytInitialPlayerResponse)
+    if (!totalSeconds) {
+      const lengthMatch = html.match(/"lengthSeconds":"(\d+)"/);
+      if (lengthMatch) {
+        totalSeconds = parseInt(lengthMatch[1]);
+        console.log('[YOUTUBE] ✓ Found duration (lengthSeconds):', totalSeconds, 'seconds');
+      }
+    }
 
+    // Pattern 3: approxDurationMs (milliseconds)
+    if (!totalSeconds) {
+      const msMatch = html.match(/"approxDurationMs":"(\d+)"/);
+      if (msMatch) {
+        totalSeconds = Math.floor(parseInt(msMatch[1]) / 1000);
+        console.log('[YOUTUBE] ✓ Found duration (approxDurationMs):', totalSeconds, 'seconds');
+      }
+    }
+
+    // Pattern 4: videoDetails duration field
+    if (!totalSeconds) {
+      const videoDetailsMatch = html.match(/"videoDetails":\{[^}]*"lengthSeconds":"(\d+)"/);
+      if (videoDetailsMatch) {
+        totalSeconds = parseInt(videoDetailsMatch[1]);
+        console.log('[YOUTUBE] ✓ Found duration (videoDetails):', totalSeconds, 'seconds');
+      }
+    }
+
+    if (totalSeconds) {
       sendResponse({
         success: true,
         duration: totalSeconds
       });
     } else {
-      console.log('[YOUTUBE] Could not find duration in page');
+      console.log('[YOUTUBE] Could not find duration in page with any pattern');
       sendResponse({
         success: false,
         error: 'Duration not found in page'
