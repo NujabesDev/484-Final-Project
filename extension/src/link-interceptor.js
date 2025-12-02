@@ -196,6 +196,59 @@ function extractRedditFullText(element) {
   return textContent.trim();
 }
 
+// Check if Reddit post is a video and extract duration
+function extractRedditVideoDuration(element) {
+  let videoElement = element;
+
+  for (let i = 0; i < 10; i++) {
+    if (!videoElement) break;
+
+    // Check for video duration indicators
+    const duration = videoElement.querySelector('[class*="duration"]') ||
+                     videoElement.querySelector('time') ||
+                     videoElement.querySelector('[class*="video-duration"]');
+
+    if (duration && duration.textContent.trim()) {
+      const parsed = parseDuration(duration.textContent.trim());
+      if (parsed > 0) {
+        console.log('Reddit video duration found:', duration.textContent.trim(), '→', parsed, 'seconds');
+        return parsed;
+      }
+    }
+
+    videoElement = videoElement.parentElement;
+  }
+
+  return null; // No video duration found
+}
+
+// Check if a Reddit post is actually a video post
+function isRedditVideoPost(element, url) {
+  // Check if URL contains video indicators
+  if (url.includes('v.redd.it') || url.includes('/video/')) {
+    return true;
+  }
+
+  // Check DOM for video indicators
+  let checkElement = element;
+  for (let i = 0; i < 8; i++) {
+    if (!checkElement) break;
+
+    const hasVideo = checkElement.querySelector('video') ||
+                     checkElement.querySelector('[data-click-id="video"]') ||
+                     checkElement.querySelector('.video-player') ||
+                     checkElement.querySelector('[class*="VideoPlayer"]');
+
+    if (hasVideo) {
+      return true;
+    }
+
+    checkElement = checkElement.parentElement;
+  }
+
+  return false;
+}
+
 // Extract video title from YouTube link element
 function extractYouTubeTitle(element) {
   // Try aria-label first (most reliable for YouTube)
@@ -228,36 +281,48 @@ function extractYouTubeTitle(element) {
 function extractYouTubeDuration(element) {
   // Look for duration badge on thumbnail
   let durationElement = element;
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 10; i++) {
     if (!durationElement) break;
 
-    const duration = durationElement.querySelector('.ytd-thumbnail-overlay-time-status-renderer') ||
+    // Try multiple selectors for YouTube duration
+    const duration = durationElement.querySelector('ytd-thumbnail-overlay-time-status-renderer #text') ||
+                     durationElement.querySelector('.ytd-thumbnail-overlay-time-status-renderer') ||
                      durationElement.querySelector('#time-status') ||
-                     durationElement.querySelector('.ytd-video-meta-block[class*="time"]');
+                     durationElement.querySelector('span.ytd-thumbnail-overlay-time-status-renderer') ||
+                     durationElement.querySelector('.ytp-time-duration');
 
     if (duration && duration.textContent.trim()) {
-      return parseDuration(duration.textContent.trim());
+      const parsed = parseDuration(duration.textContent.trim());
+      if (parsed > 0) {
+        console.log('YouTube duration found:', duration.textContent.trim(), '→', parsed, 'seconds');
+        return parsed;
+      }
     }
 
     durationElement = durationElement.parentElement;
   }
 
-  // Default: assume 5 minutes if duration not found
-  return 300;
+  console.log('No YouTube duration found, using default 10 minutes');
+  // Default: assume 10 minutes if duration not found
+  return 600;
 }
 
 // Parse duration string (e.g., "10:23" or "1:05:30") to seconds
 function parseDuration(durationStr) {
-  const parts = durationStr.split(':').reverse();
-  let seconds = 0;
+  // Remove any non-numeric characters except colons
+  const cleaned = durationStr.replace(/[^\d:]/g, '');
+  const parts = cleaned.split(':').filter(p => p.length > 0).reverse();
 
+  if (parts.length === 0) return 0;
+
+  let seconds = 0;
   for (let i = 0; i < parts.length; i++) {
     const num = parseInt(parts[i], 10);
     if (isNaN(num)) continue;
     seconds += num * Math.pow(60, i);
   }
 
-  return seconds || 300; // Default 5 minutes if parsing fails
+  return seconds;
 }
 
 // Extract tweet text from Twitter/X link element
@@ -365,15 +430,30 @@ function extractInstagramTitle(element) {
 }
 
 // Calculate time estimate in seconds (video duration or reading time)
-function calculateTimeEstimate(element, isYouTube, isReddit, isTwitter, isTikTok, isInstagram) {
-  // For videos: try to extract duration
+function calculateTimeEstimate(element, url, isYouTube, isReddit, isTwitter, isTikTok, isInstagram) {
+  // For YouTube videos: try to extract duration
   if (isYouTube) {
-    return extractYouTubeDuration(element);
+    const duration = extractYouTubeDuration(element);
+    console.log('YouTube time estimate:', duration, 'seconds (', Math.floor(duration / 60), 'min)');
+    return duration;
   }
 
+  // For TikTok videos
   if (isTikTok) {
-    // TikTok videos are typically short, default to 30 seconds
+    console.log('TikTok time estimate: 30 seconds');
     return 30;
+  }
+
+  // For Reddit: check if it's a video post first
+  if (isReddit && isRedditVideoPost(element, url)) {
+    const videoDuration = extractRedditVideoDuration(element);
+    if (videoDuration) {
+      console.log('Reddit video time estimate:', videoDuration, 'seconds (', Math.floor(videoDuration / 60), 'min)');
+      return videoDuration;
+    }
+    // If we know it's a video but couldn't get duration, assume longer video
+    console.log('Reddit video (duration unknown), using default 10 minutes');
+    return 600; // 10 minutes for video posts without duration
   }
 
   // For text posts: calculate reading time based on word count (220 words per minute)
@@ -401,10 +481,12 @@ function calculateTimeEstimate(element, isYouTube, isReddit, isTwitter, isTikTok
   if (textContent) {
     const wordCount = textContent.split(/\s+/).filter(word => word.length > 0).length;
     const readingTimeSeconds = Math.ceil((wordCount / 220) * 60);
+    console.log('Text post time estimate:', readingTimeSeconds, 'seconds for', wordCount, 'words');
     return Math.max(readingTimeSeconds, 15); // Minimum 15 seconds
   }
 
   // Default: 60 seconds
+  console.log('Using default time estimate: 60 seconds');
   return 60;
 }
 
@@ -446,7 +528,7 @@ async function handleClick(event) {
   }
 
   // Calculate time estimate
-  const timeEstimate = calculateTimeEstimate(target, isYouTube, isReddit, isTwitter, isTikTok, isInstagram);
+  const timeEstimate = calculateTimeEstimate(target, url, isYouTube, isReddit, isTwitter, isTikTok, isInstagram);
 
   try {
     // Send to background script - it handles all validation and duplicate checking
@@ -624,13 +706,14 @@ if (window.location.hostname.includes('tiktok.com')) {
   });
 }
 
-// Helper function to save social media links
-async function saveSocialMediaLink(url, title) {
+// Helper function to save social media links with time estimate
+async function saveSocialMediaLink(url, title, timeEstimate = 600) {
   try {
     const response = await chrome.runtime.sendMessage({
       action: 'SAVE_LINK',
       url: url,
-      title: title
+      title: title,
+      timeEstimate: timeEstimate
     });
 
     if (response.success) {
@@ -648,7 +731,7 @@ async function saveSocialMediaLink(url, title) {
   }
 }
 
-// Helper function to save YouTube videos
+// Helper function to save YouTube videos (default 10 min if duration unknown)
 async function saveYouTubeVideo(url, title) {
-  await saveSocialMediaLink(url, title);
+  await saveSocialMediaLink(url, title, 600);
 }
