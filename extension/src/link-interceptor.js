@@ -346,3 +346,180 @@ async function handleClick(event) {
 
 // Listen for all clicks on the page
 document.addEventListener('click', handleClick, true);
+
+// YouTube-specific: Intercept internal navigation (SPA routing)
+if (window.location.hostname.includes('youtube.com')) {
+  // Listen for YouTube's navigation events
+  document.addEventListener('yt-navigate-start', (event) => {
+    if (!productivityModeEnabled) return;
+
+    const targetUrl = event.detail?.endpoint?.commandMetadata?.webCommandMetadata?.url;
+    if (!targetUrl) return;
+
+    // Build full URL
+    const fullUrl = targetUrl.startsWith('http') ? targetUrl : `https://www.youtube.com${targetUrl}`;
+
+    // Check if it's a video URL
+    if (!isYouTubeVideoUrl(fullUrl)) return;
+
+    // Prevent navigation
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    // Extract title from the clicked element
+    const clickedElement = event.target?.closest('a, ytd-thumbnail, ytd-video-renderer');
+    const title = clickedElement ? extractYouTubeTitle(clickedElement) : 'YouTube Video';
+
+    // Save the link
+    saveYouTubeVideo(fullUrl, title);
+  }, true);
+
+  // Also watch for URL changes (backup method)
+  let lastUrl = window.location.href;
+  const urlObserver = new MutationObserver(() => {
+    const currentUrl = window.location.href;
+    if (currentUrl !== lastUrl && productivityModeEnabled) {
+      // Check if navigated to a video page
+      if (isYouTubeVideoUrl(currentUrl) && !isYouTubeVideoUrl(lastUrl)) {
+        // User navigated to a video, redirect back and save
+        const title = document.title.replace(' - YouTube', '') || 'YouTube Video';
+        window.history.back();
+        saveYouTubeVideo(currentUrl, title);
+      }
+      lastUrl = currentUrl;
+    }
+  });
+
+  // Observe URL changes
+  urlObserver.observe(document.querySelector('title'), {
+    childList: true,
+    subtree: true
+  });
+}
+
+// Reddit-specific: Intercept internal navigation (SPA routing)
+if (window.location.hostname.includes('reddit.com')) {
+  let lastUrl = window.location.href;
+  const urlObserver = new MutationObserver(() => {
+    const currentUrl = window.location.href;
+    if (currentUrl !== lastUrl && productivityModeEnabled) {
+      // Check if navigated to a post page
+      if (isRedditPostUrl(currentUrl) && !isRedditPostUrl(lastUrl)) {
+        // User navigated to a post, redirect back and save
+        const title = document.querySelector('h1')?.textContent || document.title.split(' : ')[0] || 'Reddit Post';
+        window.history.back();
+        saveSocialMediaLink(currentUrl, title);
+      }
+      lastUrl = currentUrl;
+    }
+  });
+
+  // Observe URL changes
+  urlObserver.observe(document.querySelector('title'), {
+    childList: true,
+    subtree: true
+  });
+}
+
+// Twitter/X-specific: Intercept internal navigation (SPA routing)
+if (window.location.hostname.includes('twitter.com') || window.location.hostname.includes('x.com')) {
+  let lastUrl = window.location.href;
+  const urlObserver = new MutationObserver(() => {
+    const currentUrl = window.location.href;
+    if (currentUrl !== lastUrl && productivityModeEnabled) {
+      // Check if navigated to a tweet
+      if (isTwitterPostUrl(currentUrl) && !isTwitterPostUrl(lastUrl)) {
+        // User navigated to a tweet, redirect back and save
+        const tweetText = document.querySelector('[data-testid="tweetText"]')?.textContent || 'Twitter Post';
+        const title = tweetText.length > 100 ? tweetText.substring(0, 100) + '...' : tweetText;
+        window.history.back();
+        saveSocialMediaLink(currentUrl, title);
+      }
+      lastUrl = currentUrl;
+    }
+  });
+
+  // Observe URL changes
+  urlObserver.observe(document.querySelector('title'), {
+    childList: true,
+    subtree: true
+  });
+}
+
+// Instagram-specific: Intercept internal navigation (SPA routing)
+if (window.location.hostname.includes('instagram.com')) {
+  let lastUrl = window.location.href;
+  const urlObserver = new MutationObserver(() => {
+    const currentUrl = window.location.href;
+    if (currentUrl !== lastUrl && productivityModeEnabled) {
+      // Check if navigated to a post or reel
+      if (isInstagramPostUrl(currentUrl) && !isInstagramPostUrl(lastUrl)) {
+        // User navigated to a post, redirect back and save
+        const title = document.querySelector('h1')?.textContent || 'Instagram Post';
+        window.history.back();
+        saveSocialMediaLink(currentUrl, title);
+      }
+      lastUrl = currentUrl;
+    }
+  });
+
+  // Observe URL changes
+  urlObserver.observe(document.querySelector('title'), {
+    childList: true,
+    subtree: true
+  });
+}
+
+// TikTok-specific: Intercept internal navigation (SPA routing)
+if (window.location.hostname.includes('tiktok.com')) {
+  let lastUrl = window.location.href;
+  const urlObserver = new MutationObserver(() => {
+    const currentUrl = window.location.href;
+    if (currentUrl !== lastUrl && productivityModeEnabled) {
+      // Check if navigated to a video
+      if (isTikTokVideoUrl(currentUrl) && !isTikTokVideoUrl(lastUrl)) {
+        // User navigated to a video, redirect back and save
+        const title = document.querySelector('h1')?.textContent || 'TikTok Video';
+        window.history.back();
+        saveSocialMediaLink(currentUrl, title);
+      }
+      lastUrl = currentUrl;
+    }
+  });
+
+  // Observe URL changes
+  urlObserver.observe(document.querySelector('title'), {
+    childList: true,
+    subtree: true
+  });
+}
+
+// Helper function to save social media links
+async function saveSocialMediaLink(url, title) {
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'SAVE_LINK',
+      url: url,
+      title: title
+    });
+
+    if (response.success) {
+      showNotification('Saved for later!', 'success');
+    } else if (response.error?.includes('already exists')) {
+      showNotification('Already saved!', 'warning');
+    } else if (response.error?.includes('authenticated')) {
+      showNotification('Sign in to save links', 'error');
+    } else {
+      showNotification('Failed to save', 'error');
+    }
+  } catch (error) {
+    console.error('Failed to save link:', error);
+    showNotification('Extension error', 'error');
+  }
+}
+
+// Helper function to save YouTube videos
+async function saveYouTubeVideo(url, title) {
+  await saveSocialMediaLink(url, title);
+}
