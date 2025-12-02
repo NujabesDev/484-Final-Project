@@ -224,7 +224,7 @@ async function handleGetLinks(sendResponse) {
 // Save link to Firestore with cache update
 async function handleSaveLink(message, sendResponse) {
   try {
-    const { url, title } = message;
+    const { url, title, timeEstimate } = message;
 
     if (!auth.currentUser?.uid) {
       sendResponse({
@@ -258,7 +258,7 @@ async function handleSaveLink(message, sendResponse) {
     }
 
     // Save to Firestore (waits for confirmation, includes duplicate check as safety net)
-    const newLink = await saveLinkToFirestore(db, auth.currentUser.uid, url, title, thumbnail);
+    const newLink = await saveLinkToFirestore(db, auth.currentUser.uid, url, title, thumbnail, timeEstimate);
 
     // Update cache after successful Firestore save
     // onSnapshot will also update cache, but this ensures immediate popup feedback

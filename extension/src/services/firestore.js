@@ -33,10 +33,11 @@ export async function loadLinksFromFirestore(db, userId) {
  * @param {string} url - URL to save
  * @param {string} title - Page title
  * @param {string|null} thumbnail - Optional thumbnail URL
+ * @param {number|null} timeEstimate - Optional time estimate in seconds
  * @returns {Promise<Object>} Saved link object
  * @throws {Error} If invalid URL
  */
-export async function saveLinkToFirestore(db, userId, url, title, thumbnail = null) {
+export async function saveLinkToFirestore(db, userId, url, title, thumbnail = null, timeEstimate = null) {
   ensureAuthenticated(userId);
 
   // Validate URL format
@@ -79,6 +80,11 @@ export async function saveLinkToFirestore(db, userId, url, title, thumbnail = nu
   // Add thumbnail if provided
   if (thumbnail) {
     linkData.thumbnail = thumbnail;
+  }
+
+  // Add time estimate if provided (in seconds)
+  if (timeEstimate && timeEstimate > 0) {
+    linkData.timeEstimate = timeEstimate;
   }
 
   const docRef = await addDoc(linksRef, linkData);

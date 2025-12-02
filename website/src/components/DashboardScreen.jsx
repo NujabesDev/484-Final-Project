@@ -288,6 +288,27 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
     return 'Just now'
   }
 
+  const formatTimeSaved = (totalSeconds) => {
+    if (!totalSeconds || totalSeconds === 0) return '0m'
+
+    const hours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+
+    if (hours > 0 && minutes > 0) {
+      return `${hours}h ${minutes}m`
+    } else if (hours > 0) {
+      return `${hours}h`
+    } else {
+      return `${minutes}m`
+    }
+  }
+
+  const calculateTotalTimeSaved = () => {
+    return links.reduce((total, link) => {
+      return total + (link.timeEstimate || 0)
+    }, 0)
+  }
+
   const classifyTopic = (link) => {
     const title = link.title.toLowerCase()
     const url = link.url.toLowerCase()
@@ -622,10 +643,17 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
           {/* Saved Links section */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-13">
-              {/* Left - Title */}
-              <h2 className="text-4xl text-white font-medium">
-                {showArchived ? 'Archived Links' : 'Saved Links'}
-              </h2>
+              {/* Left - Title and Time Saved */}
+              <div>
+                <h2 className="text-4xl text-white font-medium">
+                  {showArchived ? 'Archived Links' : 'Saved Links'}
+                </h2>
+                {!showArchived && links.length > 0 && (
+                  <p className="text-green-400 text-sm mt-2 font-medium">
+                    ⏱️ Time saved: {formatTimeSaved(calculateTotalTimeSaved())}
+                  </p>
+                )}
+              </div>
 
               {/* Right - Controls */}
               <div className="flex items-center gap-4 flex-1 justify-end ml-8">

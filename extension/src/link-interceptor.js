@@ -167,6 +167,35 @@ function extractPostTitle(element) {
   return element.textContent.trim() || 'Reddit Post';
 }
 
+// Extract full Reddit post content for word count
+function extractRedditFullText(element) {
+  let textContent = '';
+  let contentElement = element;
+
+  for (let i = 0; i < 8; i++) {
+    if (!contentElement) break;
+
+    // Get title
+    const title = contentElement.querySelector('h3') || contentElement.querySelector('[slot="title"]');
+    if (title) {
+      textContent += title.textContent.trim() + ' ';
+    }
+
+    // Get post body/selftext
+    const body = contentElement.querySelector('[data-click-id="text"]') ||
+                 contentElement.querySelector('.md') ||
+                 contentElement.querySelector('[slot="text-body"]');
+    if (body) {
+      textContent += body.textContent.trim();
+    }
+
+    if (textContent) break;
+    contentElement = contentElement.parentElement;
+  }
+
+  return textContent.trim();
+}
+
 // Extract video title from YouTube link element
 function extractYouTubeTitle(element) {
   // Try aria-label first (most reliable for YouTube)
@@ -193,6 +222,42 @@ function extractYouTubeTitle(element) {
 
   // Fallback: use link text or default
   return element.textContent.trim() || 'YouTube Video';
+}
+
+// Extract YouTube video duration in seconds
+function extractYouTubeDuration(element) {
+  // Look for duration badge on thumbnail
+  let durationElement = element;
+  for (let i = 0; i < 5; i++) {
+    if (!durationElement) break;
+
+    const duration = durationElement.querySelector('.ytd-thumbnail-overlay-time-status-renderer') ||
+                     durationElement.querySelector('#time-status') ||
+                     durationElement.querySelector('.ytd-video-meta-block[class*="time"]');
+
+    if (duration && duration.textContent.trim()) {
+      return parseDuration(duration.textContent.trim());
+    }
+
+    durationElement = durationElement.parentElement;
+  }
+
+  // Default: assume 5 minutes if duration not found
+  return 300;
+}
+
+// Parse duration string (e.g., "10:23" or "1:05:30") to seconds
+function parseDuration(durationStr) {
+  const parts = durationStr.split(':').reverse();
+  let seconds = 0;
+
+  for (let i = 0; i < parts.length; i++) {
+    const num = parseInt(parts[i], 10);
+    if (isNaN(num)) continue;
+    seconds += num * Math.pow(60, i);
+  }
+
+  return seconds || 300; // Default 5 minutes if parsing fails
 }
 
 // Extract tweet text from Twitter/X link element
@@ -223,6 +288,22 @@ function extractTwitterTitle(element) {
 
   // Fallback: use link text or default
   return element.textContent.trim() || 'Twitter Post';
+}
+
+// Extract full tweet text for word count
+function extractTwitterFullText(element) {
+  let titleElement = element;
+  for (let i = 0; i < 8; i++) {
+    if (!titleElement) break;
+
+    const tweetText = titleElement.querySelector('[data-testid="tweetText"]');
+    if (tweetText && tweetText.textContent.trim()) {
+      return tweetText.textContent.trim();
+    }
+
+    titleElement = titleElement.parentElement;
+  }
+  return '';
 }
 
 // Extract video title from TikTok link element
@@ -283,6 +364,50 @@ function extractInstagramTitle(element) {
   return element.textContent.trim() || 'Instagram Post';
 }
 
+// Calculate time estimate in seconds (video duration or reading time)
+function calculateTimeEstimate(element, isYouTube, isReddit, isTwitter, isTikTok, isInstagram) {
+  // For videos: try to extract duration
+  if (isYouTube) {
+    return extractYouTubeDuration(element);
+  }
+
+  if (isTikTok) {
+    // TikTok videos are typically short, default to 30 seconds
+    return 30;
+  }
+
+  // For text posts: calculate reading time based on word count (220 words per minute)
+  let textContent = '';
+
+  if (isReddit) {
+    textContent = extractRedditFullText(element);
+  } else if (isTwitter) {
+    textContent = extractTwitterFullText(element);
+  } else if (isInstagram) {
+    // Instagram: extract caption text
+    let captionElement = element;
+    for (let i = 0; i < 8; i++) {
+      if (!captionElement) break;
+      const caption = captionElement.querySelector('h1') || captionElement.querySelector('[class*="Caption"]');
+      if (caption && caption.textContent.trim()) {
+        textContent = caption.textContent.trim();
+        break;
+      }
+      captionElement = captionElement.parentElement;
+    }
+  }
+
+  // Calculate reading time
+  if (textContent) {
+    const wordCount = textContent.split(/\s+/).filter(word => word.length > 0).length;
+    const readingTimeSeconds = Math.ceil((wordCount / 220) * 60);
+    return Math.max(readingTimeSeconds, 15); // Minimum 15 seconds
+  }
+
+  // Default: 60 seconds
+  return 60;
+}
+
 // Handle link click
 async function handleClick(event) {
   const target = event.target.closest('a');
@@ -320,12 +445,16 @@ async function handleClick(event) {
     title = extractInstagramTitle(target);
   }
 
+  // Calculate time estimate
+  const timeEstimate = calculateTimeEstimate(target, isYouTube, isReddit, isTwitter, isTikTok, isInstagram);
+
   try {
     // Send to background script - it handles all validation and duplicate checking
     const response = await chrome.runtime.sendMessage({
       action: 'SAVE_LINK',
       url: url,
-      title: title
+      title: title,
+      timeEstimate: timeEstimate
     });
 
     // Show appropriate notification based on response
