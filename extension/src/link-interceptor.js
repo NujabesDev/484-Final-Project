@@ -429,56 +429,20 @@ function extractInstagramTitle(element) {
   return element.textContent.trim() || 'Instagram Post';
 }
 
-// Extract video ID from YouTube URL
-function getYouTubeVideoId(url) {
-  try {
-    const urlObj = new URL(url);
-
-    // youtube.com/watch?v=VIDEO_ID
-    if (urlObj.hostname.includes('youtube.com')) {
-      return urlObj.searchParams.get('v');
-    }
-
-    // youtu.be/VIDEO_ID
-    if (urlObj.hostname.includes('youtu.be')) {
-      return urlObj.pathname.slice(1).split('?')[0];
-    }
-  } catch (e) {
-    console.error('Failed to extract YouTube video ID:', e);
-  }
-  return null;
-}
-
-// Fetch YouTube video duration from the video page
+// Fetch YouTube video duration via background script (avoids CORS)
 async function fetchYouTubeDuration(url) {
   try {
-    const videoId = getYouTubeVideoId(url);
-    if (!videoId) {
-      console.log('Could not extract video ID from URL');
-      return null;
+    const response = await chrome.runtime.sendMessage({
+      action: 'FETCH_YOUTUBE_DURATION',
+      url: url
+    });
+
+    if (response.success && response.duration) {
+      console.log('✓ Fetched YouTube duration:', response.duration, 'seconds');
+      return response.duration;
     }
 
-    console.log('Fetching duration for video ID:', videoId);
-
-    // Fetch the YouTube page
-    const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
-    const html = await response.text();
-
-    // Try to extract duration from meta tags or JSON-LD
-    // Look for ISO 8601 duration format (e.g., "PT10M23S")
-    const durationMatch = html.match(/"duration":"PT(\d+H)?(\d+M)?(\d+S)?"/);
-
-    if (durationMatch) {
-      const hours = durationMatch[1] ? parseInt(durationMatch[1]) : 0;
-      const minutes = durationMatch[2] ? parseInt(durationMatch[2]) : 0;
-      const seconds = durationMatch[3] ? parseInt(durationMatch[3]) : 0;
-
-      const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-      console.log('✓ Fetched YouTube duration:', totalSeconds, 'seconds');
-      return totalSeconds;
-    }
-
-    console.log('Could not find duration in YouTube page');
+    console.log('Could not fetch YouTube duration:', response.error);
     return null;
   } catch (error) {
     console.error('Failed to fetch YouTube duration:', error);

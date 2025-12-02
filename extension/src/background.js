@@ -261,6 +261,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  if (message.action === 'FETCH_YOUTUBE_DURATION') {
+    handleFetchYouTubeDuration(message, sendResponse);
+    return true;
+  }
+
   return false;
 });
 
@@ -497,4 +502,77 @@ async function handleSetProductivityMode(message, sendResponse) {
       error: error.message
     });
   }
+}
+
+// Fetch YouTube video duration
+async function handleFetchYouTubeDuration(message, sendResponse) {
+  try {
+    const { url } = message;
+
+    // Extract video ID from URL
+    const videoId = extractYouTubeVideoId(url);
+    if (!videoId) {
+      sendResponse({
+        success: false,
+        error: 'Could not extract video ID'
+      });
+      return;
+    }
+
+    console.log('[YOUTUBE] Fetching duration for video ID:', videoId);
+
+    // Fetch the YouTube page
+    const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+    const html = await response.text();
+
+    // Try to extract duration from meta tags or JSON-LD
+    // Look for ISO 8601 duration format (e.g., "PT10M23S")
+    const durationMatch = html.match(/"duration":"PT(\d+H)?(\d+M)?(\d+S)?"/);
+
+    if (durationMatch) {
+      const hours = durationMatch[1] ? parseInt(durationMatch[1]) : 0;
+      const minutes = durationMatch[2] ? parseInt(durationMatch[2]) : 0;
+      const seconds = durationMatch[3] ? parseInt(durationMatch[3]) : 0;
+
+      const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+      console.log('[YOUTUBE] ✓ Fetched duration:', totalSeconds, 'seconds');
+
+      sendResponse({
+        success: true,
+        duration: totalSeconds
+      });
+    } else {
+      console.log('[YOUTUBE] Could not find duration in page');
+      sendResponse({
+        success: false,
+        error: 'Duration not found in page'
+      });
+    }
+  } catch (error) {
+    console.error('[YOUTUBE] Failed to fetch duration:', error);
+    sendResponse({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+// Extract video ID from YouTube URL
+function extractYouTubeVideoId(url) {
+  try {
+    const urlObj = new URL(url);
+
+    // youtube.com/watch?v=VIDEO_ID
+    if (urlObj.hostname.includes('youtube.com')) {
+      return urlObj.searchParams.get('v');
+    }
+
+    // youtu.be/VIDEO_ID
+    if (urlObj.hostname.includes('youtu.be')) {
+      return urlObj.pathname.slice(1).split('?')[0];
+    }
+  } catch (e) {
+    console.error('Failed to extract YouTube video ID:', e);
+  }
+  return null;
 }
