@@ -429,16 +429,80 @@ function extractInstagramTitle(element) {
   return element.textContent.trim() || 'Instagram Post';
 }
 
+// Extract video ID from YouTube URL
+function getYouTubeVideoId(url) {
+  try {
+    const urlObj = new URL(url);
+
+    // youtube.com/watch?v=VIDEO_ID
+    if (urlObj.hostname.includes('youtube.com')) {
+      return urlObj.searchParams.get('v');
+    }
+
+    // youtu.be/VIDEO_ID
+    if (urlObj.hostname.includes('youtu.be')) {
+      return urlObj.pathname.slice(1).split('?')[0];
+    }
+  } catch (e) {
+    console.error('Failed to extract YouTube video ID:', e);
+  }
+  return null;
+}
+
+// Fetch YouTube video duration from the video page
+async function fetchYouTubeDuration(url) {
+  try {
+    const videoId = getYouTubeVideoId(url);
+    if (!videoId) {
+      console.log('Could not extract video ID from URL');
+      return null;
+    }
+
+    console.log('Fetching duration for video ID:', videoId);
+
+    // Fetch the YouTube page
+    const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+    const html = await response.text();
+
+    // Try to extract duration from meta tags or JSON-LD
+    // Look for ISO 8601 duration format (e.g., "PT10M23S")
+    const durationMatch = html.match(/"duration":"PT(\d+H)?(\d+M)?(\d+S)?"/);
+
+    if (durationMatch) {
+      const hours = durationMatch[1] ? parseInt(durationMatch[1]) : 0;
+      const minutes = durationMatch[2] ? parseInt(durationMatch[2]) : 0;
+      const seconds = durationMatch[3] ? parseInt(durationMatch[3]) : 0;
+
+      const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+      console.log('✓ Fetched YouTube duration:', totalSeconds, 'seconds');
+      return totalSeconds;
+    }
+
+    console.log('Could not find duration in YouTube page');
+    return null;
+  } catch (error) {
+    console.error('Failed to fetch YouTube duration:', error);
+    return null;
+  }
+}
+
 // Calculate time estimate in seconds using smart platform-based defaults and title heuristics
-function calculateTimeEstimate(element, url, title, isYouTube, isReddit, isTwitter, isTikTok, isInstagram) {
+async function calculateTimeEstimate(element, url, title, isYouTube, isReddit, isTwitter, isTikTok, isInstagram) {
   // Try to extract duration from DOM first (best effort)
   let extractedDuration = null;
 
   if (isYouTube) {
+    // First try DOM extraction (works if we're on YouTube)
     extractedDuration = extractYouTubeDuration(element);
     if (extractedDuration && extractedDuration !== 600) { // If we found real duration (not default)
-      console.log('✓ YouTube duration extracted:', extractedDuration, 'sec (', Math.floor(extractedDuration / 60), 'min)');
+      console.log('✓ YouTube duration extracted from DOM:', extractedDuration, 'sec (', Math.floor(extractedDuration / 60), 'min)');
       return extractedDuration;
+    }
+
+    // If DOM extraction failed, try fetching from YouTube page (works from any site)
+    const fetchedDuration = await fetchYouTubeDuration(url);
+    if (fetchedDuration) {
+      return fetchedDuration;
     }
   }
 
@@ -556,8 +620,8 @@ async function handleClick(event) {
     title = extractInstagramTitle(target);
   }
 
-  // Calculate time estimate (pass title for heuristics)
-  const timeEstimate = calculateTimeEstimate(target, url, title, isYouTube, isReddit, isTwitter, isTikTok, isInstagram);
+  // Calculate time estimate (pass title for heuristics) - await since it's now async for YouTube
+  const timeEstimate = await calculateTimeEstimate(target, url, title, isYouTube, isReddit, isTwitter, isTikTok, isInstagram);
 
   try {
     // Send to background script - it handles all validation and duplicate checking
