@@ -239,6 +239,35 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
     }
   }
 
+  const getPlatformLogo = (url) => {
+    try {
+      const urlObj = new URL(url)
+      const hostname = urlObj.hostname.toLowerCase()
+
+      // Check for specific platforms and return their logo URLs
+      if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+        return 'https://www.youtube.com/s/desktop/f506bd45/img/favicon_144x144.png'
+      }
+      if (hostname.includes('reddit.com')) {
+        return 'https://www.redditstatic.com/desktop2x/img/favicon/android-icon-192x192.png'
+      }
+      if (hostname.includes('twitter.com') || hostname.includes('x.com')) {
+        return 'https://abs.twimg.com/icons/apple-touch-icon-192x192.png'
+      }
+      if (hostname.includes('instagram.com')) {
+        return 'https://static.cdninstagram.com/rsrc.php/v3/yt/r/30PrGfR3xhB.png'
+      }
+      if (hostname.includes('tiktok.com')) {
+        return 'https://sf16-website-login.neutral.ttwstatic.com/obj/tiktok_web_login_static/tiktok/webapp/main/webapp-desktop/8152caf0c8e8bc67ae0d.png'
+      }
+
+      // Default: use Google's favicon service
+      return `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`
+    } catch {
+      return null
+    }
+  }
+
   const getTimeAgo = (timestamp) => {
     const now = Date.now()
     const diff = now - timestamp
@@ -1063,23 +1092,61 @@ export function DashboardScreen({ user, onNavigateToStats, onNavigateToFAQ }) {
                           className="w-full h-full object-cover"
                           loading="lazy"
                           onError={(e) => {
-                            e.target.onerror = null
-                            e.target.style.display = 'none'
-                            e.target.parentElement.innerHTML = `
-                              <div class="w-full h-full flex items-center justify-center bg-neutral-800 px-4">
-                                <p class="text-neutral-500 text-sm text-center font-medium">
-                                  This post does not have an image:(
-                                </p>
-                              </div>
-                            `
+                            // On thumbnail error, try platform logo
+                            const platformLogo = getPlatformLogo(link.url)
+                            if (platformLogo) {
+                              e.target.src = platformLogo
+                              e.target.className = 'w-32 h-32 object-contain'
+                              e.target.onerror = () => {
+                                // If platform logo also fails, show placeholder
+                                e.target.style.display = 'none'
+                                e.target.parentElement.innerHTML = `
+                                  <div class="w-full h-full flex items-center justify-center bg-neutral-800 px-4">
+                                    <p class="text-neutral-500 text-sm text-center font-medium">
+                                      This post does not have an image
+                                    </p>
+                                  </div>
+                                `
+                              }
+                            } else {
+                              e.target.style.display = 'none'
+                              e.target.parentElement.innerHTML = `
+                                <div class="w-full h-full flex items-center justify-center bg-neutral-800 px-4">
+                                  <p class="text-neutral-500 text-sm text-center font-medium">
+                                    This post does not have an image
+                                  </p>
+                                </div>
+                              `
+                            }
                           }}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-neutral-800 px-4">
-                          <p className="text-neutral-500 text-sm text-center font-medium">
-                            This post does not have an image:(
-                          </p>
-                        </div>
+                        // No thumbnail - use platform logo
+                        getPlatformLogo(link.url) ? (
+                          <img
+                            src={getPlatformLogo(link.url)}
+                            alt={getDomain(link.url)}
+                            className="w-32 h-32 object-contain"
+                            loading="lazy"
+                            onError={(e) => {
+                              // If platform logo fails, show placeholder
+                              e.target.style.display = 'none'
+                              e.target.parentElement.innerHTML = `
+                                <div class="w-full h-full flex items-center justify-center bg-neutral-800 px-4">
+                                  <p class="text-neutral-500 text-sm text-center font-medium">
+                                    This post does not have an image
+                                  </p>
+                                </div>
+                              `
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-neutral-800 px-4">
+                            <p className="text-neutral-500 text-sm text-center font-medium">
+                              This post does not have an image
+                            </p>
+                          </div>
+                        )
                       )}
                     </div>
 
