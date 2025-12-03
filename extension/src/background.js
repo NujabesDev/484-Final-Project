@@ -1,7 +1,8 @@
 // Background service worker
 import { initializeApp } from 'firebase/app';
 import { initializeAuth, indexedDBLocalPersistence, signInWithCredential, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth/web-extension';
-import { getFirestore, onSnapshot, collection } from 'firebase/firestore';
+import { getFirestore, onSnapshot, collection, doc, updateDoc } from 'firebase/firestore';
+import { getAI, getGenerativeModel, GoogleAIBackend } from 'firebase/ai';
 import { buildAuthUrl } from './config.js';
 import { loadLinksFromFirestore, saveLinkToFirestore, deleteLinkFromFirestore } from './services/firestore.js';
 import { isRedditPostUrl, scrapeRedditThumbnail } from './services/reddit-scraper.js';
@@ -25,6 +26,12 @@ const auth = initializeAuth(app, {
 });
 
 const db = getFirestore(app);
+
+// Initialize Firebase AI with Gemini Developer API
+const ai = getAI(app, { backend: new GoogleAIBackend() });
+const aiModel = getGenerativeModel(ai, {
+  model: "gemini-2.5-flash-lite"  // Fastest, cheapest model for free tier
+});
 
 // Real-time sync state
 let realtimeSyncUnsubscribe = null;
@@ -186,6 +193,148 @@ async function loadCacheFromLocal() {
 
 async function clearLinkCache() {
   await chrome.storage.local.remove('cachedQueue');
+}
+
+// Fetch meta description from page for better AI context
+async function fetchMetaDescription(url) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3-second timeout
+
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.log('[META] HTTP error:', response.status);
+      return null;
+    }
+
+    // Only read first 50KB (enough for <head> section)
+    const text = await response.text();
+    const headMatch = text.match(/<head[\s\S]*?<\/head>/i);
+    const head = headMatch ? headMatch[0] : text.slice(0, 50000);
+
+    // Try multiple meta tag patterns
+    const patterns = [
+      /<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i,
+      /<meta\s+content=["']([^"']+)["']\s+name=["']description["']/i,
+      /<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i,
+      /<meta\s+content=["']([^"']+)["']\s+property=["']og:description["']/i
+    ];
+
+    for (const pattern of patterns) {
+      const match = head.match(pattern);
+      if (match && match[1]) {
+        console.log('[META] Found description:', match[1].slice(0, 100));
+        return match[1];
+      }
+    }
+
+    console.log('[META] No meta description found');
+    return null;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.log('[META] Fetch timeout after 3s');
+    } else {
+      console.log('[META] Fetch failed:', error.message);
+    }
+    return null; // Graceful fallback
+  }
+}
+
+// Extract metadata from URL for better AI summaries
+function extractMetadata(url, title, timeEstimate) {
+  const urlObj = new URL(url);
+  const domain = urlObj.hostname.replace('www.', '');
+
+  // Extract subreddit for Reddit
+  const subredditMatch = url.match(/\/r\/([^\/]+)\//);
+  const subreddit = subredditMatch ? subredditMatch[1] : null;
+
+  // Infer content type from URL patterns
+  let contentType = 'webpage';
+  if (url.includes('youtube.com/watch') || url.includes('youtu.be')) {
+    contentType = url.includes('/shorts/') ? 'short video' : 'video';
+  } else if (url.includes('reddit.com') && url.includes('/comments/')) {
+    contentType = 'discussion';
+  } else if (url.includes('twitter.com/') || url.includes('x.com/')) {
+    contentType = 'tweet';
+  } else if (url.includes('tiktok.com')) {
+    contentType = 'short video';
+  } else if (url.includes('instagram.com')) {
+    contentType = 'post';
+  } else if (url.includes('medium.com') || url.includes('/article')) {
+    contentType = 'article';
+  }
+
+  // Format duration text
+  const durationText = timeEstimate
+    ? ` (${Math.round(timeEstimate / 60)} min)`
+    : '';
+
+  return { domain, subreddit, contentType, durationText };
+}
+
+// Build AI prompt with enhanced metadata
+function buildSummaryPrompt(url, title, timeEstimate, metaDescription = null) {
+  const { domain, subreddit, contentType, durationText } = extractMetadata(url, title, timeEstimate);
+
+  let prompt = `Summarize this ${contentType} in ONE sentence (max 20 words):\n`;
+  prompt += `Platform: ${domain}\n`;
+  if (subreddit) {
+    prompt += `Community: r/${subreddit}\n`;
+  }
+  if (durationText) {
+    prompt += `Duration:${durationText}\n`;
+  }
+  prompt += `Title: ${title}`;
+
+  // Add meta description if available for better context
+  if (metaDescription) {
+    prompt += `\nDescription: ${metaDescription}`;
+  }
+
+  return prompt;
+}
+
+// Generate AI summary in background (fire-and-forget)
+async function generateSummaryInBackground(userId, linkId, url, title, timeEstimate) {
+  try {
+    console.log('[AI] Starting background summary generation for:', title);
+
+    // Step 1: Try to fetch meta description (with 3s timeout)
+    const metaDescription = await fetchMetaDescription(url);
+    if (metaDescription) {
+      console.log('[AI] Meta description found:', metaDescription.slice(0, 100) + '...');
+    } else {
+      console.log('[AI] No meta description, using URL+title only');
+    }
+
+    // Step 2: Build prompt with available context
+    const prompt = buildSummaryPrompt(url, title, timeEstimate, metaDescription);
+    console.log('[AI] Prompt built with', metaDescription ? 'meta description' : 'URL+title only');
+
+    // Step 3: Call Gemini API
+    const result = await aiModel.generateContent(prompt);
+    const summary = result.response.text().trim();
+    console.log('[AI] Generated summary:', summary);
+
+    // Step 4: Save to Firestore
+    const linkRef = doc(db, 'users', userId, 'links', linkId);
+    await updateDoc(linkRef, { summary });
+    console.log('[AI] Summary saved to Firestore');
+
+    // Note: Real-time listener will update cache automatically!
+  } catch (error) {
+    console.error('[AI] Background summary generation failed:', error);
+    // Don't throw - this is fire-and-forget, link is already saved
+  }
 }
 
 // Listen for Firebase auth state changes
@@ -416,6 +565,12 @@ async function handleSaveLink(message, sendResponse) {
       await saveCacheToLocal([...currentCache, newLink]);
       console.log('[SAVE] Cache updated');
     }
+
+    // Generate AI summary in background (fire-and-forget, don't block response)
+    generateSummaryInBackground(user.uid, newLink.id, url, title, timeEstimate).catch(err => {
+      console.error('[AI] Background summary generation error:', err);
+      // Don't fail the save if summary generation fails
+    });
 
     sendResponse({
       success: true,

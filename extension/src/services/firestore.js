@@ -74,7 +74,8 @@ export async function saveLinkToFirestore(db, userId, url, title, thumbnail = nu
   const linkData = {
     url: url,
     title: title || url,
-    createdAt: timestamp
+    createdAt: timestamp,
+    summary: null  // AI summary - populated lazily on first display
   };
 
   // Add thumbnail if provided

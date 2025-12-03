@@ -43,3 +43,25 @@ button:not(:disabled):active {
 button:disabled {
   cursor: default;
 }
+
+/* AI Summary animations and styles */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+#linkSummary {
+  transition: opacity 0.3s ease;
+}
+
+#linkSummary:empty {
+  display: none; /* Hide when no content */
+}

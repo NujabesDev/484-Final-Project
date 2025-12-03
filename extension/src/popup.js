@@ -109,6 +109,7 @@ const authSection = document.getElementById('authSection');
 const mainHeader = document.getElementById('mainHeader');
 const saveSection = document.getElementById('saveSection');
 const linkCard = document.getElementById('linkCard');
+const linkSummary = document.getElementById('linkSummary');
 const linkTitle = document.getElementById('linkTitle');
 const linkUrl = document.getElementById('linkUrl');
 const linkFavicon = document.getElementById('linkFavicon');
@@ -248,6 +249,7 @@ function displayRandomLink() {
     if (linkFavicon) {
       linkFavicon.classList.add('invisible');
     }
+    linkSummary.textContent = '';
     linkTitle.textContent = 'Your queue is empty';
     linkUrl.textContent = 'Save a link below!';
     updateButtonStates();
@@ -267,6 +269,15 @@ function displayRandomLink() {
     linkFavicon.classList.remove('invisible');
   } else if (linkFavicon) {
     linkFavicon.classList.add('invisible');
+  }
+
+  // Handle AI summary
+  if (currentLink.summary) {
+    // Summary exists - show it!
+    linkSummary.textContent = currentLink.summary;
+  } else {
+    // No summary yet - will appear when ready via real-time sync
+    linkSummary.textContent = '';
   }
 
   linkCard.classList.remove('hidden');
